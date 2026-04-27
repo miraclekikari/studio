@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { Navbar } from '@/components/layout/Navbar'
 import { DocumentCard } from '@/components/documents/DocumentCard'
 import { RecommendationList } from '@/components/documents/RecommendationList'
+import { UploadDocument } from '@/components/documents/UploadDocument'
 import { Button } from '@/components/ui/button'
 import { Filter, TrendingUp, Clock, Star, Library } from 'lucide-react'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -84,14 +85,40 @@ export default function Home() {
       
       <main className="flex-1 container mx-auto px-4 py-8">
         {/* Hero / Recommendation Section */}
+        <div className="flex flex-col md:flex-row items-center justify-between gap-8 mb-12 bg-white rounded-3xl p-8 border shadow-sm">
+          <div className="flex-1 space-y-4 text-center md:text-left">
+            <h1 className="text-4xl md:text-5xl font-headline font-bold text-slate-900 leading-tight">
+              Libérez vos <span className="text-primary">connaissances</span>.
+            </h1>
+            <p className="text-lg text-muted-foreground max-w-xl">
+              Partagez, découvrez et discutez de documents dans un espace social sécurisé. Rejoignez la communauté d'experts.
+            </p>
+            <div className="pt-4 flex flex-wrap gap-4 justify-center md:justify-start">
+              <UploadDocument />
+              <Button variant="outline" size="lg" className="rounded-full px-8">
+                Explorer
+              </Button>
+            </div>
+          </div>
+          <div className="flex-1 hidden lg:block">
+            <div className="relative aspect-video rounded-2xl overflow-hidden shadow-2xl">
+              <img 
+                src="https://picsum.photos/seed/hero/800/450" 
+                alt="Community" 
+                className="object-cover w-full h-full"
+              />
+            </div>
+          </div>
+        </div>
+
         <RecommendationList />
 
         {/* Discovery Feed */}
         <section>
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
             <div>
-              <h2 className="text-3xl font-headline font-bold text-slate-900">Discover Library</h2>
-              <p className="text-muted-foreground mt-1">Browse shared knowledge from our global community.</p>
+              <h2 className="text-3xl font-headline font-bold text-slate-900">Découvrir la bibliothèque</h2>
+              <p className="text-muted-foreground mt-1">Explorez les connaissances partagées par notre communauté mondiale.</p>
             </div>
             
             <div className="flex items-center gap-2 overflow-x-auto pb-2 md:pb-0">
@@ -99,22 +126,22 @@ export default function Home() {
                 <TabsList className="bg-white shadow-sm border">
                   <TabsTrigger value="trending" className="flex items-center gap-2">
                     <TrendingUp className="w-4 h-4" />
-                    <span className="hidden sm:inline">Trending</span>
+                    <span className="hidden sm:inline">Tendances</span>
                   </TabsTrigger>
                   <TabsTrigger value="newest" className="flex items-center gap-2">
                     <Clock className="w-4 h-4" />
-                    <span className="hidden sm:inline">Newest</span>
+                    <span className="hidden sm:inline">Nouveautés</span>
                   </TabsTrigger>
                   <TabsTrigger value="popular" className="flex items-center gap-2">
                     <Star className="w-4 h-4" />
-                    <span className="hidden sm:inline">Top Rated</span>
+                    <span className="hidden sm:inline">Mieux notés</span>
                   </TabsTrigger>
                 </TabsList>
               </Tabs>
               
               <Button variant="outline" className="flex items-center gap-2 bg-white shadow-sm">
                 <Filter className="w-4 h-4" />
-                <span>Filters</span>
+                <span>Filtres</span>
               </Button>
             </div>
           </div>
@@ -128,7 +155,7 @@ export default function Home() {
 
           <div className="mt-12 text-center">
             <Button variant="outline" size="lg" className="rounded-full px-8">
-              Load More Documents
+              Charger plus de documents
             </Button>
           </div>
         </section>
@@ -144,25 +171,25 @@ export default function Home() {
               <span className="font-headline font-bold text-xl tracking-tight">LibreShare</span>
             </div>
             <p className="text-muted-foreground text-sm leading-relaxed">
-              Empowering knowledge sharing through a social, accessible document platform.
+              Donner le pouvoir au partage de connaissances via une plateforme sociale et accessible.
             </p>
           </div>
           
           <div>
-            <h4 className="font-headline font-bold mb-4">Platform</h4>
+            <h4 className="font-headline font-bold mb-4">Plateforme</h4>
             <ul className="space-y-2 text-sm text-muted-foreground">
-              <li><Link href="#" className="hover:text-primary transition-colors">How it works</Link></li>
-              <li><Link href="#" className="hover:text-primary transition-colors">Pricing</Link></li>
+              <li><Link href="#" className="hover:text-primary transition-colors">Comment ça marche</Link></li>
+              <li><Link href="#" className="hover:text-primary transition-colors">Tarifs</Link></li>
               <li><Link href="#" className="hover:text-primary transition-colors">PWA Mobile</Link></li>
-              <li><Link href="#" className="hover:text-primary transition-colors">Security</Link></li>
+              <li><Link href="#" className="hover:text-primary transition-colors">Sécurité</Link></li>
             </ul>
           </div>
           
           <div>
-            <h4 className="font-headline font-bold mb-4">Company</h4>
+            <h4 className="font-headline font-bold mb-4">Entreprise</h4>
             <ul className="space-y-2 text-sm text-muted-foreground">
-              <li><Link href="#" className="hover:text-primary transition-colors">About Us</Link></li>
-              <li><Link href="#" className="hover:text-primary transition-colors">Careers</Link></li>
+              <li><Link href="#" className="hover:text-primary transition-colors">À propos</Link></li>
+              <li><Link href="#" className="hover:text-primary transition-colors">Carrières</Link></li>
               <li><Link href="#" className="hover:text-primary transition-colors">Blog</Link></li>
               <li><Link href="#" className="hover:text-primary transition-colors">Contact</Link></li>
             </ul>
@@ -170,19 +197,19 @@ export default function Home() {
           
           <div>
             <h4 className="font-headline font-bold mb-4">Newsletter</h4>
-            <p className="text-sm text-muted-foreground mb-4">Get the latest documents in your inbox.</p>
+            <p className="text-sm text-muted-foreground mb-4">Recevez les derniers documents par email.</p>
             <div className="flex gap-2">
               <input 
                 type="email" 
-                placeholder="Email address" 
+                placeholder="Adresse email" 
                 className="flex-1 bg-muted px-3 py-2 rounded-md text-sm border-none focus:ring-1 focus:ring-primary outline-none" 
               />
-              <Button size="sm">Join</Button>
+              <Button size="sm">S'abonner</Button>
             </div>
           </div>
         </div>
         <div className="container mx-auto px-4 mt-12 pt-8 border-t text-center text-xs text-muted-foreground">
-          © 2025 LibreShare Inc. All rights reserved. Built for knowledge.
+          © 2025 LibreShare Inc. Tous droits réservés. Conçu pour le savoir.
         </div>
       </footer>
     </div>
