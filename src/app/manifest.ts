@@ -3,9 +3,9 @@ import { MetadataRoute } from 'next'
  
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'LibreShare Social Library',
+    name: 'LibreShare - Social Library',
     short_name: 'LibreShare',
-    description: 'Partagez et découvrez le savoir avec l\'IA.',
+    description: 'Partagez et découvrez le savoir avec Supabase et Cloudinary.',
     start_url: '/',
     display: 'standalone',
     background_color: '#F8FAFC',

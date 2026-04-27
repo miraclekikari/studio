@@ -1,3 +1,4 @@
+
 "use client"
 
 import React, { useState, useEffect } from 'react'
@@ -21,34 +22,30 @@ import Link from 'next/link'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { summarizeDocument } from '@/ai/flows/ai-document-summarization-flow'
 import { Skeleton } from '@/components/ui/skeleton'
-import { getDocumentById, incrementDocumentViews, type DocumentData, toggleLikeDocument } from '@/lib/db'
-import { auth } from '@/firebase/config'
+import { getDocumentById, incrementDocumentViews, type Document, toggleLikeDocument } from '@/lib/db'
+import { supabase } from '@/lib/supabase'
 import { useToast } from '@/hooks/use-toast'
 
 export default function DocumentDetailPage() {
   const { id } = useParams()
   const router = useRouter()
   const { toast } = useToast()
-  const [docData, setDocData] = useState<DocumentData | null>(null)
+  const [docData, setDocData] = useState<Document | null>(null)
   const [loading, setLoading] = useState(true)
   const [summary, setSummary] = useState<string | null>(null)
   const [summarizing, setSummarizing] = useState(false)
-  const [isLiked, setIsLiked] = useState(false)
-  const [likesCount, setLikesCount] = useState(0)
+  const [userId, setUserId] = useState<string | null>(null)
   
   useEffect(() => {
-    async function fetchDoc() {
+    async function init() {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) setUserId(user.id)
+
       if (typeof id !== 'string') return
       try {
         const data = await getDocumentById(id)
         if (data) {
           setDocData(data)
-          setLikesCount(data.likes)
-          const user = auth.currentUser
-          if (user && data.likedBy) {
-            setIsLiked(data.likedBy.includes(user.uid))
-          }
-          // Incrémenter les vues
           incrementDocumentViews(id).catch(console.error)
         }
       } catch (err) {
@@ -57,20 +54,19 @@ export default function DocumentDetailPage() {
         setLoading(false)
       }
     }
-    fetchDoc()
+    init()
   }, [id])
 
   const handleLike = async () => {
-    const user = auth.currentUser
-    if (!user || !docData?.id) {
+    if (!userId || !docData?.id) {
       toast({ title: "Connexion requise", description: "Veuillez vous connecter pour aimer ce document.", variant: "destructive" })
       return
     }
 
     try {
-      await toggleLikeDocument(docData.id, user.uid)
-      setIsLiked(!isLiked)
-      setLikesCount(prev => isLiked ? prev - 1 : prev + 1)
+      await toggleLikeDocument(docData.id, userId)
+      toast({ title: "Document aimé !" })
+      // Rafraîchir localement ou via service
     } catch (err) {
       console.error(err)
     }
@@ -95,9 +91,9 @@ export default function DocumentDetailPage() {
     return (
       <div className="flex flex-col min-h-screen bg-slate-50">
         <Navbar />
-        <main className="flex-1 container mx-auto px-4 py-20 flex flex-col items-center justify-center">
+        <main className="flex-1 flex flex-col items-center justify-center">
           <Loader2 className="w-12 h-12 text-primary animate-spin mb-4" />
-          <p className="text-slate-500 font-medium">Récupération des données...</p>
+          <p className="text-slate-500 font-medium">Récupération des données Supabase...</p>
         </main>
       </div>
     )
@@ -109,7 +105,7 @@ export default function DocumentDetailPage() {
         <Navbar />
         <main className="flex-1 container mx-auto px-4 py-20 text-center">
           <h1 className="text-2xl font-bold mb-4">Document non trouvé</h1>
-          <Button onClick={() => router.push('/')} className="rounded-full px-8">Retour à l'accueil</Button>
+          <Button onClick={() => router.push('/')} className="rounded-full px-8">Retour</Button>
         </main>
       </div>
     )
@@ -129,16 +125,22 @@ export default function DocumentDetailPage() {
           {/* Main Content */}
           <div className="lg:col-span-8 space-y-8">
             <div className="bg-white rounded-[2.5rem] p-4 shadow-xl border overflow-hidden">
-              <div className="aspect-[3/4] bg-slate-50 rounded-[2rem] flex items-center justify-center border-2 border-dashed border-slate-100 relative overflow-hidden group">
-                {docData.thumbnailUrl ? (
-                  <img src={docData.thumbnailUrl} alt={docData.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
-                ) : (
+              {docData.thumbnail_url ? (
+                <div className="aspect-[3/4] rounded-[2rem] overflow-hidden">
+                  <iframe 
+                    src={docData.file_url} 
+                    className="w-full h-full border-none"
+                    title={docData.title}
+                  />
+                </div>
+              ) : (
+                <div className="aspect-[3/4] bg-slate-50 rounded-[2rem] flex items-center justify-center border-2 border-dashed border-slate-100">
                   <div className="text-center p-12">
                     <FileText className="w-20 h-20 text-slate-200 mx-auto mb-4" />
-                    <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">Aperçu indisponible</p>
+                    <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">Prévisualisation indisponible</p>
                   </div>
-                )}
-              </div>
+                </div>
+              )}
             </div>
 
             <div className="bg-white rounded-[2.5rem] p-10 shadow-sm border">
@@ -147,12 +149,12 @@ export default function DocumentDetailPage() {
               <div className="flex flex-wrap items-center justify-between gap-6 mb-10 pb-10 border-b">
                 <div className="flex items-center gap-4">
                   <Avatar className="w-12 h-12 ring-4 ring-primary/5 shadow-sm">
-                    <AvatarImage src={docData.userAvatar} />
-                    <AvatarFallback className="bg-primary/10 text-primary font-bold">{docData.userName?.[0] || 'U'}</AvatarFallback>
+                    <AvatarImage src={docData.profiles?.avatar_url} />
+                    <AvatarFallback className="bg-primary/10 text-primary font-bold">{docData.profiles?.full_name?.[0] || 'U'}</AvatarFallback>
                   </Avatar>
                   <div>
-                    <p className="font-bold text-slate-900">{docData.userName}</p>
-                    <p className="text-xs text-slate-400 font-medium">Contributeur certifié</p>
+                    <p className="font-bold text-slate-900">{docData.profiles?.full_name}</p>
+                    <p className="text-xs text-slate-400 font-medium">Contributeur Supabase</p>
                   </div>
                 </div>
                 
@@ -161,15 +163,12 @@ export default function DocumentDetailPage() {
                     variant="outline" 
                     size="sm" 
                     onClick={handleLike}
-                    className={`rounded-full gap-2 border-slate-200 hover:bg-slate-50 transition-colors ${isLiked ? 'text-red-500 border-red-100 bg-red-50/50' : ''}`}
+                    className="rounded-full gap-2 border-slate-200 hover:bg-slate-50"
                   >
-                    <Heart className={`w-4 h-4 ${isLiked ? 'fill-current' : ''}`} /> {likesCount}
-                  </Button>
-                  <Button variant="outline" size="sm" className="rounded-full gap-2 border-slate-200 hover:bg-slate-50">
-                    <Share2 className="w-4 h-4" />
+                    <Heart className="w-4 h-4" /> {docData.likes}
                   </Button>
                   <Button size="lg" className="rounded-full gap-2 shadow-lg shadow-primary/20 px-8" asChild>
-                    <a href={docData.fileUrl} target="_blank" rel="noopener noreferrer">
+                    <a href={docData.file_url} target="_blank" rel="noopener noreferrer">
                       <Download className="w-4 h-4" /> Télécharger
                     </a>
                   </Button>
@@ -182,7 +181,7 @@ export default function DocumentDetailPage() {
                   <div className="space-y-2">
                     <div className="flex items-center gap-3 text-sm text-slate-500">
                       <Calendar className="w-4 h-4" />
-                      Partagé récemment
+                      Partagé via Cloudinary
                     </div>
                     <div className="flex items-center gap-3 text-sm text-slate-500">
                       <FileText className="w-4 h-4" />
@@ -191,11 +190,8 @@ export default function DocumentDetailPage() {
                   </div>
                 </div>
                 <div className="space-y-4">
-                  <h2 className="text-xl font-headline font-bold text-slate-800">Tags</h2>
+                  <h2 className="text-xl font-headline font-bold text-slate-800">Tags IA</h2>
                   <div className="flex flex-wrap gap-2">
-                    <Badge variant="secondary" className="px-3 py-1 bg-slate-100 text-slate-600 border-none rounded-full font-bold">
-                      #{docData.category}
-                    </Badge>
                     {docData.tags?.map(tag => (
                       <Badge key={tag} variant="secondary" className="px-3 py-1 bg-primary/5 text-primary border-none rounded-full font-bold">
                         #{tag}
@@ -207,24 +203,17 @@ export default function DocumentDetailPage() {
 
               <Separator className="my-10" />
 
-              <h2 className="text-xl font-headline font-bold mb-4 text-slate-800">À propos de ce document</h2>
+              <h2 className="text-xl font-headline font-bold mb-4 text-slate-800">Description</h2>
               <p className="text-slate-600 leading-relaxed text-lg">
                 {docData.description}
               </p>
             </div>
           </div>
 
-          {/* Sidebar */}
+          {/* Assistant IA Sidebar */}
           <div className="lg:col-span-4 space-y-8">
-            <div className="bg-secondary text-secondary-foreground rounded-[2.5rem] p-8 shadow-2xl relative overflow-hidden group sticky top-24">
-              <div className="absolute -top-10 -right-10 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
-                <Sparkles className="w-48 h-48" />
-              </div>
-              
+            <div className="bg-primary text-primary-foreground rounded-[2.5rem] p-8 shadow-2xl relative overflow-hidden group sticky top-24">
               <h3 className="text-2xl font-headline font-bold flex items-center gap-3 mb-6 relative z-10">
-                <div className="bg-white/10 p-2 rounded-xl">
-                  <Sparkles className="w-6 h-6" />
-                </div>
                 Assistant IA
               </h3>
               
@@ -232,59 +221,29 @@ export default function DocumentDetailPage() {
                 {!summary && !summarizing ? (
                   <>
                     <p className="text-base opacity-80 mb-8 leading-relaxed">
-                      Besoin d'un aperçu rapide ? Notre IA analyse ce document pour vous en générer un résumé instantané.
+                      Laissez notre IA analyser ce document Supabase pour vous en générer un résumé.
                     </p>
                     <Button 
                       onClick={handleSummarize}
                       variant="secondary" 
-                      className="w-full bg-white text-secondary hover:bg-white/90 border-none font-bold rounded-full py-6 text-lg shadow-xl shadow-black/10 transition-transform active:scale-95"
+                      className="w-full bg-white text-primary hover:bg-white/90 border-none font-bold rounded-full py-6"
                     >
-                      Résumer avec l'IA
+                      Résumer
                     </Button>
                   </>
                 ) : summarizing ? (
                   <div className="space-y-4 py-4">
                     <Skeleton className="h-5 w-full bg-white/10 rounded-full" />
                     <Skeleton className="h-5 w-[90%] bg-white/10 rounded-full" />
-                    <Skeleton className="h-5 w-[80%] bg-white/10 rounded-full" />
-                    <Skeleton className="h-5 w-[95%] bg-white/10 rounded-full" />
-                    <p className="text-xs text-center animate-pulse opacity-60 font-bold uppercase tracking-widest mt-6">Analyse neuronale...</p>
+                    <p className="text-xs text-center animate-pulse opacity-60 font-bold mt-6">Analyse...</p>
                   </div>
                 ) : (
-                  <div className="space-y-6">
-                    <div className="bg-white/5 backdrop-blur-sm p-6 rounded-[1.5rem] border border-white/10 shadow-inner">
-                      <p className="text-base leading-relaxed italic opacity-90">
-                        "{summary}"
-                      </p>
-                    </div>
-                    <Button 
-                      onClick={() => setSummary(null)}
-                      variant="link" 
-                      className="text-white/50 p-0 h-auto text-xs font-bold uppercase tracking-widest hover:text-white transition-colors"
-                    >
-                      Effacer le résumé
-                    </Button>
+                  <div className="bg-white/5 backdrop-blur-sm p-6 rounded-[1.5rem] border border-white/10 shadow-inner">
+                    <p className="text-base leading-relaxed italic opacity-90">
+                      "{summary}"
+                    </p>
                   </div>
                 )}
-              </div>
-            </div>
-
-            <div className="bg-white rounded-[2.5rem] p-8 shadow-sm border">
-              <h3 className="font-headline font-bold text-lg mb-6 flex items-center gap-3 text-slate-800">
-                <div className="bg-slate-100 p-2 rounded-xl">
-                  <Eye className="w-5 h-5 text-slate-500" />
-                </div>
-                Statistiques
-              </h3>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="p-5 bg-slate-50/50 rounded-3xl text-center border border-slate-50">
-                  <p className="text-3xl font-bold text-primary mb-1">{docData.views}</p>
-                  <p className="text-[10px] text-slate-400 uppercase tracking-widest font-black">Lectures</p>
-                </div>
-                <div className="p-5 bg-slate-50/50 rounded-3xl text-center border border-slate-50">
-                  <p className="text-3xl font-bold text-primary mb-1">{docData.format.toUpperCase()}</p>
-                  <p className="text-[10px] text-slate-400 uppercase tracking-widest font-black">Format</p>
-                </div>
               </div>
             </div>
           </div>

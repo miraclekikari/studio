@@ -1,42 +1,53 @@
+
 "use client"
 
 import React, { useEffect, useState } from 'react'
 import { Navbar } from '@/components/layout/Navbar'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Badge } from '@/components/ui/badge'
 import { 
   Calendar, 
   MapPin, 
-  Link as LinkIcon, 
   Edit, 
-  Users, 
   FileText, 
-  Award,
   ChevronRight,
   Loader2
 } from 'lucide-react'
-import Link from 'next/link'
-import { auth } from '@/firebase/config'
-import { onAuthStateChanged } from 'firebase/auth'
-import { getOrCreateProfile, type UserProfile } from '@/lib/db'
+import { supabase } from '@/lib/supabase'
+import { getOrCreateProfile, type Profile } from '@/lib/db'
 
 export default function ProfilePage() {
-  const [profile, setProfile] = useState<UserProfile | null>(null)
+  const [profile, setProfile] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        const p = await getOrCreateProfile(user.uid, {
-          fullName: user.displayName || 'Utilisateur',
-          avatarUrl: user.photoURL || ''
+    async function getProfile() {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session?.user) {
+        const p = await getOrCreateProfile(session.user.id, {
+          full_name: session.user.user_metadata?.full_name || 'Utilisateur',
+          avatar_url: session.user.user_metadata?.avatar_url || ''
         })
         setProfile(p)
       }
       setLoading(false)
+    }
+
+    getProfile()
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      if (session?.user) {
+        const p = await getOrCreateProfile(session.user.id, {
+          full_name: session.user.user_metadata?.full_name || 'Utilisateur',
+          avatar_url: session.user.user_metadata?.avatar_url || ''
+        })
+        setProfile(p)
+      } else {
+        setProfile(null)
+      }
     })
-    return () => unsubscribe()
+
+    return () => subscription.unsubscribe()
   }, [])
 
   if (loading) {
@@ -76,12 +87,12 @@ export default function ProfilePage() {
           <div className="relative -mt-16 md:-mt-24 mb-8 flex flex-col md:flex-row md:items-end justify-between gap-6">
             <div className="flex flex-col md:flex-row items-center md:items-end gap-6">
               <Avatar className="w-32 h-32 md:w-48 md:h-48 border-4 border-white shadow-xl bg-white">
-                <AvatarImage src={profile.avatarUrl} />
-                <AvatarFallback>{profile.fullName?.[0]}</AvatarFallback>
+                <AvatarImage src={profile.avatar_url} />
+                <AvatarFallback>{profile.full_name?.[0]}</AvatarFallback>
               </Avatar>
               <div className="text-center md:text-left pb-4">
-                <h1 className="text-3xl md:text-4xl font-headline font-bold text-slate-900">{profile.fullName}</h1>
-                <p className="text-lg text-primary font-medium">{profile.username}</p>
+                <h1 className="text-3xl md:text-4xl font-headline font-bold text-slate-900">{profile.full_name}</h1>
+                <p className="text-lg text-primary font-medium">@{profile.username}</p>
               </div>
             </div>
             
@@ -96,7 +107,7 @@ export default function ProfilePage() {
               <div className="bg-white rounded-2xl p-6 shadow-sm border">
                 <h3 className="font-headline font-bold text-lg mb-4">À propos</h3>
                 <p className="text-muted-foreground text-sm leading-relaxed mb-6">
-                  {profile.bio}
+                  {profile.bio || "Membre de la communauté LibreShare."}
                 </p>
                 
                 <div className="space-y-3 text-sm text-muted-foreground">
@@ -107,17 +118,6 @@ export default function ProfilePage() {
                   <div className="flex items-center gap-2">
                     <Calendar className="w-4 h-4" />
                     <span>Inscrit récemment</span>
-                  </div>
-                </div>
-
-                <div className="flex gap-4 mt-8 pt-8 border-t">
-                  <div className="text-center flex-1">
-                    <p className="text-xl font-bold">{profile.followers || 0}</p>
-                    <p className="text-[10px] text-muted-foreground uppercase font-bold">Abonnés</p>
-                  </div>
-                  <div className="text-center flex-1">
-                    <p className="text-xl font-bold">{profile.following || 0}</p>
-                    <p className="text-[10px] text-muted-foreground uppercase font-bold">Abonnements</p>
                   </div>
                 </div>
               </div>

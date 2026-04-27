@@ -1,6 +1,7 @@
+
 "use client"
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { FileText, Download, Eye, Heart, Share2 } from 'lucide-react'
@@ -8,7 +9,7 @@ import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { auth } from '@/firebase/config'
+import { supabase } from '@/lib/supabase'
 import { toggleLikeDocument } from '@/lib/db'
 import { useToast } from '@/hooks/use-toast'
 import { cn } from '@/lib/utils'
@@ -22,21 +23,25 @@ interface DocumentCardProps {
   tags: string[];
   views: number;
   likes: number;
-  likedBy?: string[];
   type: string;
 }
 
-export function DocumentCard({ id, title, author, authorAvatar, thumbnail, tags, views, likes, likedBy = [], type }: DocumentCardProps) {
+export function DocumentCard({ id, title, author, authorAvatar, thumbnail, tags, views, likes, type }: DocumentCardProps) {
   const { toast } = useToast()
-  const user = auth.currentUser
   const [currentLikes, setCurrentLikes] = useState(likes)
-  const [isLiked, setIsLiked] = useState(user ? likedBy.includes(user.uid) : false)
+  const [userId, setUserId] = useState<string | null>(null)
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) setUserId(user.id)
+    })
+  }, [])
 
   const handleLike = async (e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
     
-    if (!user) {
+    if (!userId) {
       toast({
         title: "Connexion requise",
         description: "Connectez-vous pour aimer ce document.",
@@ -46,9 +51,9 @@ export function DocumentCard({ id, title, author, authorAvatar, thumbnail, tags,
     }
 
     try {
-      await toggleLikeDocument(id, user.uid)
-      setIsLiked(!isLiked)
-      setCurrentLikes(prev => isLiked ? prev - 1 : prev + 1)
+      await toggleLikeDocument(id, userId)
+      setCurrentLikes(prev => prev + 1)
+      toast({ title: "Aimé !" })
     } catch (error) {
       console.error(error)
     }
@@ -70,9 +75,6 @@ export function DocumentCard({ id, title, author, authorAvatar, thumbnail, tags,
             <Link href={`/document/${id}`}>
               <Eye className="w-6 h-6" />
             </Link>
-          </Button>
-          <Button size="icon" variant="secondary" className="rounded-full w-12 h-12 shadow-2xl hover:scale-110 transition-transform">
-            <Download className="w-6 h-6" />
           </Button>
         </div>
 
@@ -108,12 +110,9 @@ export function DocumentCard({ id, title, author, authorAvatar, thumbnail, tags,
         <div className="flex items-center gap-5 text-slate-400">
           <button 
             onClick={handleLike}
-            className={cn(
-              "flex items-center gap-1.5 transition-colors group/like",
-              isLiked ? "text-red-500" : "hover:text-red-500"
-            )}
+            className="flex items-center gap-1.5 transition-colors hover:text-red-500"
           >
-            <Heart className={cn("w-4 h-4", isLiked && "fill-current")} />
+            <Heart className="w-4 h-4" />
             <span className="text-xs font-bold">{currentLikes}</span>
           </button>
           <div className="flex items-center gap-1.5">

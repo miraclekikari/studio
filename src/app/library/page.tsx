@@ -1,32 +1,46 @@
+
 "use client"
 
 import React, { useEffect, useState } from 'react'
 import { Navbar } from '@/components/layout/Navbar'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Library, Plus, Search, List, Grid2X2, Loader2 } from 'lucide-react'
+import { Library, Plus, Search, List, LayoutGrid, Loader2 } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { DocumentCard } from '@/components/documents/DocumentCard'
 import { UploadDocument } from '@/components/documents/UploadDocument'
-import { getUserDocuments, type DocumentData } from '@/lib/db'
-import { auth } from '@/firebase/config'
-import { onAuthStateChanged } from 'firebase/auth'
+import { getUserDocuments, type Document } from '@/lib/db'
+import { supabase } from '@/lib/supabase'
 
 export default function LibraryPage() {
-  const [documents, setDocuments] = useState<DocumentData[]>([])
+  const [documents, setDocuments] = useState<Document[]>([])
   const [loading, setLoading] = useState(true)
   const [userId, setUserId] = useState<string | null>(null)
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user) {
-        setUserId(user.uid)
-        fetchUserDocs(user.uid)
+    async function getSession() {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session?.user) {
+        setUserId(session.user.id)
+        fetchUserDocs(session.user.id)
       } else {
         setLoading(false)
       }
+    }
+
+    getSession()
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        setUserId(session.user.id)
+        fetchUserDocs(session.user.id)
+      } else {
+        setUserId(null)
+        setDocuments([])
+      }
     })
-    return () => unsubscribe()
+
+    return () => subscription.unsubscribe()
   }, [])
 
   async function fetchUserDocs(uid: string) {
@@ -61,17 +75,16 @@ export default function LibraryPage() {
             <TabsList className="bg-transparent h-12">
               <TabsTrigger value="all" className="data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-xl px-6">Tous</TabsTrigger>
               <TabsTrigger value="uploads" className="data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-xl px-6">Mes Uploads</TabsTrigger>
-              <TabsTrigger value="favorites" className="data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-xl px-6">Favoris</TabsTrigger>
             </TabsList>
 
             <div className="flex items-center gap-3 px-2">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                <Input placeholder="Rechercher dans ma liste..." className="pl-10 h-10 w-full md:w-64 bg-white border-none shadow-inner" />
+                <Input placeholder="Rechercher..." className="pl-10 h-10 w-full md:w-64 bg-white border-none shadow-inner" />
               </div>
               <div className="flex border rounded-xl overflow-hidden bg-white">
                 <Button variant="ghost" size="icon" className="h-10 w-10 rounded-none border-r"><List className="w-4 h-4" /></Button>
-                <Button variant="ghost" size="icon" className="h-10 w-10 rounded-none bg-slate-50"><Grid2X2 className="w-4 h-4" /></Button>
+                <Button variant="ghost" size="icon" className="h-10 w-10 rounded-none bg-slate-50"><LayoutGrid className="w-4 h-4" /></Button>
               </div>
             </div>
           </div>
@@ -87,41 +100,27 @@ export default function LibraryPage() {
                 {documents.map((doc) => (
                   <DocumentCard 
                     key={doc.id} 
-                    id={doc.id!}
+                    id={doc.id}
                     title={doc.title}
-                    author={doc.userName}
-                    thumbnail={doc.thumbnailUrl}
-                    tags={[doc.category, doc.format.toUpperCase()]}
+                    author={userId === doc.user_id ? "Moi" : "Utilisateur"}
+                    thumbnail={doc.thumbnail_url}
+                    tags={doc.tags || []}
                     views={doc.views}
                     likes={doc.likes}
                     type={doc.format}
                   />
                 ))}
-                <div className="col-span-1 border-2 border-dashed border-slate-200 rounded-[2rem] flex flex-col items-center justify-center p-12 text-center group cursor-pointer hover:border-primary/50 transition-all hover:bg-white/50">
-                  <div className="bg-slate-100 p-4 rounded-full mb-4 group-hover:bg-primary/10 transition-colors">
-                    <Plus className="w-8 h-8 text-slate-400 group-hover:text-primary transition-colors" />
-                  </div>
-                  <h3 className="font-headline font-bold text-slate-600">Nouveau Savoir</h3>
-                  <p className="text-sm text-slate-400 mt-2">Ajoutez un fichier à votre bibliothèque</p>
-                </div>
               </div>
             ) : (
               <div className="text-center py-20 bg-white rounded-[2.5rem] border border-dashed border-slate-200 shadow-sm">
                 <Library className="w-16 h-16 text-slate-200 mx-auto mb-6" />
                 <h3 className="text-2xl font-headline font-bold text-slate-800">Votre bibliothèque est vide</h3>
-                <p className="text-slate-500 mt-3 max-w-md mx-auto">Commencez par partager votre premier document pour enrichir la communauté.</p>
+                <p className="text-slate-500 mt-3 max-w-md mx-auto">Commencez par partager votre premier document sur Supabase.</p>
                 <div className="mt-10">
                   <UploadDocument />
                 </div>
               </div>
             )}
-          </TabsContent>
-          
-          <TabsContent value="uploads">
-             {/* Similaire au contenu "all" filtré ou un message spécifique */}
-             <div className="text-center py-20 bg-white rounded-[2.5rem] border shadow-sm">
-               <p className="text-slate-500">Ici s'afficheront uniquement les documents que vous avez mis en ligne.</p>
-             </div>
           </TabsContent>
         </Tabs>
       </main>

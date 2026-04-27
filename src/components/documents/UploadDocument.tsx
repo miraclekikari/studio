@@ -30,14 +30,14 @@ export function UploadDocument() {
         const { data: { user } } = await supabase.auth.getUser()
         
         if (!user) {
-          toast({ variant: "destructive", title: "Non connecté", description: "Veuillez vous connecter." })
+          toast({ variant: "destructive", title: "Non connecté", description: "Veuillez vous connecter à Supabase." })
           return
         }
 
         setIsProcessing(true)
 
         try {
-          // Analyse IA
+          // Analyse IA des tags
           let aiTags: string[] = []
           try {
             const tagResult = await automatedDocumentTagging({ 
@@ -48,10 +48,10 @@ export function UploadDocument() {
             aiTags = ["Général", info.format || "fichier"]
           }
 
-          // Sauvegarde Supabase
+          // Sauvegarde Supabase SQL
           await saveDocument({
-            title: info.original_filename || "Document sans titre",
-            description: "Document partagé par la communauté LibreShare.",
+            title: info.original_filename || "Document Supabase",
+            description: "Partagé via Cloudinary sur LibreShare.",
             file_url: info.secure_url,
             thumbnail_url: info.thumbnail_url || `https://placehold.co/400x600?text=${info.original_filename}`,
             category: "Général",
@@ -60,12 +60,12 @@ export function UploadDocument() {
             tags: aiTags
           })
 
-          toast({ title: "Succès !", description: "Votre savoir a été partagé." })
+          toast({ title: "Succès !", description: "Votre document est en ligne sur Supabase." })
           router.refresh()
           window.location.reload()
         } catch (error) {
           console.error("Upload save error:", error)
-          toast({ variant: "destructive", title: "Erreur", description: "Impossible d'enregistrer." })
+          toast({ variant: "destructive", title: "Erreur", description: "Impossible d'enregistrer sur Supabase." })
         } finally {
           setIsProcessing(false)
         }
@@ -76,10 +76,10 @@ export function UploadDocument() {
           onClick={() => open()}
           size="lg"
           disabled={isProcessing}
-          className="rounded-full px-8 flex items-center gap-2 bg-primary hover:bg-primary/90 shadow-xl transition-all hover:scale-105 active:scale-95"
+          className="rounded-full px-8 flex items-center gap-2 bg-primary hover:bg-primary/90 shadow-xl transition-all"
         >
           {isProcessing ? <Loader2 className="w-5 h-5 animate-spin" /> : <Plus className="w-5 h-5" />}
-          <span className="font-bold">{isProcessing ? "Analyse..." : "Partager"}</span>
+          <span className="font-bold">{isProcessing ? "Traitement..." : "Publier"}</span>
         </Button>
       )}
     </CldUploadWidget>
