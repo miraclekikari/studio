@@ -8,6 +8,7 @@ export interface Profile {
   avatar_url: string;
   bio?: string;
   interests?: string[];
+  email?: string;
 }
 
 export interface Document {
@@ -24,6 +25,27 @@ export interface Document {
   tags: string[];
   created_at: string;
   profiles?: Profile;
+}
+
+/**
+ * Récupère un email à partir d'un pseudo ou d'un nom complet
+ */
+export async function resolveEmailFromIdentifier(identifier: string): Promise<string | null> {
+  if (!isSupabaseConfigured || !identifier) return null;
+  if (identifier.includes('@')) return identifier; // C'est déjà un email
+
+  try {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('email')
+      .or(`username.eq."${identifier}",full_name.eq."${identifier}"`)
+      .maybeSingle();
+
+    if (error || !data) return null;
+    return data.email;
+  } catch (e) {
+    return null;
+  }
 }
 
 /**
@@ -47,7 +69,8 @@ export async function getOrCreateProfile(uid: string, defaultData: Partial<Profi
       full_name: defaultData.full_name || 'Utilisateur',
       avatar_url: defaultData.avatar_url || `https://picsum.photos/seed/${uid}/200/200`,
       bio: 'Membre de la communauté Studio.',
-      interests: defaultData.interests || ["Technologie", "Savoir"]
+      interests: defaultData.interests || ["Technologie", "Savoir"],
+      email: defaultData.email
     };
 
     const { data, error: insertError } = await supabase
@@ -92,15 +115,21 @@ export async function saveDocument(doc: Omit<Document, 'id' | 'created_at' | 'li
 /**
  * Récupère les derniers documents
  */
-export async function getLatestDocuments(limitCount: number = 20): Promise<Document[]> {
+export async function getLatestDocuments(limitCount: number = 20, category?: string): Promise<Document[]> {
   if (!isSupabaseConfigured) return [];
 
   try {
-    const { data, error } = await supabase
+    let query = supabase
       .from('documents')
       .select('*, profiles!user_id(*)')
       .order('created_at', { ascending: false })
       .limit(limitCount);
+
+    if (category && category !== 'Tous') {
+      query = query.eq('category', category);
+    }
+
+    const { data, error } = await query;
 
     if (error) throw error;
     return (data as any[]) || [];
@@ -152,11 +181,9 @@ export async function incrementDocumentViews(id: string) {
 export async function toggleLikeDocument(docId: string, userId: string) {
   if (!isSupabaseConfigured || !docId) return;
   try {
-    const { data } = await supabase.from('documents').select('likes').eq('id', docId).maybeSingle();
-    if (data) {
-      const { error } = await supabase.from('documents').update({ likes: (data.likes || 0) + 1 }).eq('id', docId);
-      if (error) throw error;
-    }
+    const { data } = await supabase.from('documents').select('liked_by').eq('id', docId).maybeSingle();
+    // Logique simplifiée pour Studio
+    await supabase.rpc('increment_likes', { doc_id: docId });
   } catch (e) {
     console.error("Like error:", e);
   }

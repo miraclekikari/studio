@@ -11,8 +11,8 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/componen
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { supabase, isSupabaseConfigured } from '@/lib/supabase'
 import { useToast } from '@/hooks/use-toast'
-import { Loader2, Library, UserCircle2, Plus, X, ChevronRight, AlertCircle } from 'lucide-react'
-import { getOrCreateProfile } from '@/lib/db'
+import { Loader2, Library, UserCircle2, Plus, X, ChevronRight, AlertCircle, Fingerprint } from 'lucide-react'
+import { getOrCreateProfile, resolveEmailFromIdentifier } from '@/lib/db'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 
@@ -27,12 +27,13 @@ interface StoredAccount {
 export default function AuthPage() {
   const [loading, setLoading] = useState(false)
   const [savedAccounts, setSavedAccounts] = useState<StoredAccount[]>([])
-  const [showAccountSwitcher, setShowAccountSwitcher] = useState(false) // Par défaut false pour éviter hydration mismatch
+  const [showAccountSwitcher, setShowAccountSwitcher] = useState(false)
   const { toast } = useToast()
 
-  const [email, setEmail] = useState('')
+  const [identifier, setIdentifier] = useState('') // Email ou Pseudo
   const [password, setPassword] = useState('')
   const [fullName, setFullName] = useState('')
+  const [username, setUsername] = useState('')
 
   useEffect(() => {
     const accounts = localStorage.getItem('studio_saved_accounts')
@@ -64,13 +65,17 @@ export default function AuthPage() {
     if (updated.length === 0) setShowAccountSwitcher(false)
   }
 
-  const handleLogin = async (e?: React.FormEvent, overrideEmail?: string) => {
+  const handleLogin = async (e?: React.FormEvent) => {
     if (e) e.preventDefault()
     if (!isSupabaseConfigured) return
 
     setLoading(true)
     try {
-      const loginEmail = overrideEmail || email
+      const loginEmail = await resolveEmailFromIdentifier(identifier)
+      if (!loginEmail) {
+        throw new Error("Identifiant non reconnu. Utilisez votre email ou pseudo exact.")
+      }
+
       const { data, error } = await supabase.auth.signInWithPassword({ email: loginEmail, password })
       if (error) throw error
       
@@ -90,7 +95,6 @@ export default function AuthPage() {
       }
 
       toast({ title: "Connexion réussie !" })
-      // Utilisation de window.location pour forcer un rechargement propre et éviter les exceptions client-side de navigation
       window.location.href = '/'
     } catch (error: any) {
       toast({ variant: "destructive", title: "Erreur", description: error.message })
@@ -104,8 +108,9 @@ export default function AuthPage() {
 
     setLoading(true)
     try {
+      // Inscription via email (obligatoire pour Supabase Auth)
       const { data, error } = await supabase.auth.signUp({ 
-        email, 
+        email: identifier, 
         password,
         options: {
           data: { full_name: fullName }
@@ -116,7 +121,8 @@ export default function AuthPage() {
       if (data.user) {
         const profile = await getOrCreateProfile(data.user.id, {
           full_name: fullName,
-          username: fullName.toLowerCase().replace(/\s/g, '_')
+          username: username.toLowerCase().replace(/\s/g, '_'),
+          email: data.user.email
         })
         
         if (profile) {
@@ -143,27 +149,17 @@ export default function AuthPage() {
       <Navbar />
       <main className="flex-1 flex items-center justify-center p-4 py-12">
         <div className="w-full max-w-md space-y-8">
-          {!isSupabaseConfigured && (
-            <Alert variant="destructive" className="rounded-2xl">
-              <AlertCircle className="h-4 w-4" />
-              <AlertTitle>Configuration requise</AlertTitle>
-              <AlertDescription>
-                Veuillez ajouter vos clés Supabase dans les variables d'environnement pour activer la connexion.
-              </AlertDescription>
-            </Alert>
-          )}
-
           <div className="text-center space-y-2">
-            <div className="inline-flex p-3 bg-primary rounded-2xl shadow-xl mb-4">
-              <Library className="w-8 h-8 text-white" />
+            <div className="inline-flex p-4 bg-primary rounded-3xl shadow-2xl mb-4 rotate-3">
+              <Fingerprint className="w-10 h-10 text-white" />
             </div>
-            <h1 className="text-3xl font-headline font-bold text-slate-900 tracking-tight">Studio</h1>
-            <p className="text-slate-500 font-medium">Votre espace de savoir partagé</p>
+            <h1 className="text-4xl font-headline font-bold text-slate-900 tracking-tight leading-none">Studio</h1>
+            <p className="text-slate-500 font-medium">Votre accès au savoir partagé</p>
           </div>
 
           {showAccountSwitcher && savedAccounts.length > 0 ? (
             <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <div className="bg-white rounded-[2rem] shadow-2xl overflow-hidden border border-slate-100">
+              <div className="bg-white rounded-[2.5rem] shadow-2xl overflow-hidden border border-slate-100">
                 <div className="p-6 border-b bg-slate-50/50">
                   <h2 className="font-headline font-bold text-lg">Comptes enregistrés</h2>
                 </div>
@@ -172,39 +168,39 @@ export default function AuthPage() {
                     <div 
                       key={acc.uid} 
                       onClick={() => {
-                        setEmail(acc.email)
+                        setIdentifier(acc.email)
                         setShowAccountSwitcher(false)
                       }}
-                      className="flex items-center justify-between p-4 hover:bg-slate-50 transition-colors cursor-pointer group"
+                      className="flex items-center justify-between p-5 hover:bg-slate-50 transition-colors cursor-pointer group"
                     >
                       <div className="flex items-center gap-4">
-                        <Avatar className="w-12 h-12 ring-2 ring-white shadow-sm">
+                        <Avatar className="w-14 h-14 ring-4 ring-white shadow-md">
                           <AvatarImage src={acc.avatar_url} />
-                          <AvatarFallback className="bg-primary/10 text-primary font-bold">{acc.full_name[0]}</AvatarFallback>
+                          <AvatarFallback className="bg-primary/10 text-primary font-bold text-lg">{acc.full_name[0]}</AvatarFallback>
                         </Avatar>
                         <div>
-                          <p className="font-bold text-slate-900">{acc.full_name}</p>
-                          <p className="text-xs text-slate-400 font-medium">@{acc.username}</p>
+                          <p className="font-bold text-slate-900 text-lg">{acc.full_name}</p>
+                          <p className="text-sm text-slate-400 font-medium">@{acc.username}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
                         <Button 
                           variant="ghost" 
                           size="icon" 
-                          className="h-8 w-8 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                          className="h-10 w-10 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
                           onClick={(e) => removeAccount(e, acc.uid)}
                         >
-                          <X className="w-4 h-4 text-slate-400" />
+                          <X className="w-5 h-5 text-slate-300 hover:text-red-500" />
                         </Button>
-                        <ChevronRight className="w-5 h-5 text-slate-300 group-hover:text-primary transition-colors" />
+                        <ChevronRight className="w-6 h-6 text-slate-200 group-hover:text-primary transition-colors" />
                       </div>
                     </div>
                   ))}
                 </div>
-                <div className="p-4 bg-slate-50/30">
+                <div className="p-5 bg-slate-50/30">
                   <Button 
-                    variant="ghost" 
-                    className="w-full justify-start gap-3 rounded-xl h-12 text-primary font-bold hover:bg-white"
+                    variant="outline" 
+                    className="w-full justify-center gap-3 rounded-2xl h-14 text-primary font-bold hover:bg-white border-slate-200"
                     onClick={() => setShowAccountSwitcher(false)}
                   >
                     <Plus className="w-5 h-5" /> Ajouter un compte
@@ -214,57 +210,53 @@ export default function AuthPage() {
             </div>
           ) : (
             <Tabs defaultValue="login" className="w-full animate-in fade-in duration-500">
-              <TabsList className="grid w-full grid-cols-2 rounded-xl h-12 mb-8 bg-slate-100 p-1">
-                <TabsTrigger value="login" className="rounded-lg font-bold">Connexion</TabsTrigger>
-                <TabsTrigger value="register" className="rounded-lg font-bold">Inscription</TabsTrigger>
+              <TabsList className="grid w-full grid-cols-2 rounded-[1.5rem] h-14 mb-8 bg-slate-100 p-1">
+                <TabsTrigger value="login" className="rounded-2xl font-bold text-base">Connexion</TabsTrigger>
+                <TabsTrigger value="register" className="rounded-2xl font-bold text-base">Inscription</TabsTrigger>
               </TabsList>
 
               <TabsContent value="login">
-                <Card className="border-none shadow-2xl rounded-[2rem] overflow-hidden bg-white">
-                  <CardHeader>
-                    <CardTitle className="text-2xl font-headline font-bold">Ravi de vous revoir</CardTitle>
-                  </CardHeader>
+                <Card className="border-none shadow-2xl rounded-[2.5rem] overflow-hidden bg-white">
                   <form onSubmit={handleLogin}>
-                    <CardContent className="space-y-4">
+                    <CardContent className="space-y-6 pt-10">
                       <div className="space-y-2">
-                        <Label htmlFor="email">Email</Label>
+                        <Label htmlFor="identifier" className="font-bold text-slate-700 ml-2">Email ou Pseudo</Label>
                         <Input 
-                          id="email" 
-                          type="email" 
-                          value={email} 
-                          onChange={(e) => setEmail(e.target.value)} 
-                          placeholder="votre@email.com"
-                          className="rounded-xl h-12"
-                          disabled={loading || !isSupabaseConfigured}
+                          id="identifier" 
+                          value={identifier} 
+                          onChange={(e) => setIdentifier(e.target.value)} 
+                          placeholder="votre@email.com ou @pseudo"
+                          className="rounded-2xl h-14 border-slate-100 bg-slate-50/50 focus:bg-white transition-all text-lg"
+                          disabled={loading}
                           required 
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="password">Mot de passe</Label>
+                        <Label htmlFor="password" className="font-bold text-slate-700 ml-2">Mot de passe</Label>
                         <Input 
                           id="password" 
                           type="password" 
                           value={password} 
                           onChange={(e) => setPassword(e.target.value)} 
-                          className="rounded-xl h-12"
-                          disabled={loading || !isSupabaseConfigured}
+                          className="rounded-2xl h-14 border-slate-100 bg-slate-50/50 focus:bg-white transition-all text-lg"
+                          disabled={loading}
                           required 
                         />
                       </div>
                     </CardContent>
-                    <CardFooter className="flex flex-col gap-4">
-                      <Button className="w-full rounded-full h-14 font-bold text-lg" disabled={loading || !isSupabaseConfigured} type="submit">
-                        {loading && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
+                    <CardFooter className="flex flex-col gap-4 pb-10">
+                      <Button className="w-full rounded-full h-16 font-bold text-xl shadow-xl shadow-primary/20" disabled={loading} type="submit">
+                        {loading && <Loader2 className="mr-2 h-6 w-6 animate-spin" />}
                         Se connecter
                       </Button>
                       {savedAccounts.length > 0 && (
                         <Button 
                           variant="ghost" 
                           type="button"
-                          className="w-full text-slate-400 font-medium"
+                          className="w-full text-slate-400 font-bold"
                           onClick={() => setShowAccountSwitcher(true)}
                         >
-                          Basculer vers un autre compte
+                          Retour aux comptes enregistrés
                         </Button>
                       )}
                     </CardFooter>
@@ -273,54 +265,61 @@ export default function AuthPage() {
               </TabsContent>
 
               <TabsContent value="register">
-                <Card className="border-none shadow-2xl rounded-[2rem] overflow-hidden bg-white">
-                  <CardHeader>
-                    <CardTitle className="text-2xl font-headline font-bold">Créer un compte</CardTitle>
-                  </CardHeader>
+                <Card className="border-none shadow-2xl rounded-[2.5rem] overflow-hidden bg-white">
                   <form onSubmit={handleRegister}>
-                    <CardContent className="space-y-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="name">Nom complet</Label>
-                        <Input 
-                          id="name" 
-                          value={fullName} 
-                          onChange={(e) => setFullName(e.target.value)} 
-                          placeholder="Jean Dupont"
-                          className="rounded-xl h-12"
-                          disabled={loading || !isSupabaseConfigured}
-                          required 
-                        />
+                    <CardContent className="space-y-4 pt-10">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="name" className="font-bold text-slate-700 ml-2">Nom Complet</Label>
+                          <Input 
+                            id="name" 
+                            value={fullName} 
+                            onChange={(e) => setFullName(e.target.value)} 
+                            placeholder="Jean Dupont"
+                            className="rounded-2xl h-12 border-slate-100 bg-slate-50/50"
+                            required 
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="username" className="font-bold text-slate-700 ml-2">Pseudo</Label>
+                          <Input 
+                            id="username" 
+                            value={username} 
+                            onChange={(e) => setUsername(e.target.value)} 
+                            placeholder="jdupont"
+                            className="rounded-2xl h-12 border-slate-100 bg-slate-50/50"
+                            required 
+                          />
+                        </div>
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="reg-email">Email</Label>
+                        <Label htmlFor="reg-email" className="font-bold text-slate-700 ml-2">Email</Label>
                         <Input 
                           id="reg-email" 
                           type="email" 
-                          value={email} 
-                          onChange={(e) => setEmail(e.target.value)} 
+                          value={identifier} 
+                          onChange={(e) => setIdentifier(e.target.value)} 
                           placeholder="votre@email.com"
-                          className="rounded-xl h-12"
-                          disabled={loading || !isSupabaseConfigured}
+                          className="rounded-2xl h-14 border-slate-100 bg-slate-50/50"
                           required 
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="reg-password">Mot de passe</Label>
+                        <Label htmlFor="reg-password" className="font-bold text-slate-700 ml-2">Mot de passe</Label>
                         <Input 
                           id="reg-password" 
                           type="password" 
                           value={password} 
                           onChange={(e) => setPassword(e.target.value)} 
-                          className="rounded-xl h-12"
-                          disabled={loading || !isSupabaseConfigured}
+                          className="rounded-2xl h-14 border-slate-100 bg-slate-50/50"
                           required 
                         />
                       </div>
                     </CardContent>
-                    <CardFooter className="flex flex-col gap-4">
-                      <Button className="w-full rounded-full h-14 font-bold text-lg shadow-xl shadow-primary/20" disabled={loading || !isSupabaseConfigured} type="submit">
-                        {loading && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
-                        S'inscrire et commencer
+                    <CardFooter className="pb-10">
+                      <Button className="w-full rounded-full h-16 font-bold text-xl shadow-xl shadow-primary/20" disabled={loading} type="submit">
+                        {loading && <Loader2 className="mr-2 h-6 w-6 animate-spin" />}
+                        S'inscrire et démarrer
                       </Button>
                     </CardFooter>
                   </form>
