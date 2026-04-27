@@ -43,10 +43,16 @@ export default function ExplorePage() {
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
-    toast({ title: "Recherche en cours", description: `Résultats pour "${searchQuery}"` })
-    // Logique de recherche filtrée côté client pour démo
-    const filtered = documents.filter(d => d.title.toLowerCase().includes(searchQuery.toLowerCase()))
-    if (filtered.length > 0) setDocuments(filtered)
+    if (!searchQuery.trim()) {
+      fetchDocs()
+      return
+    }
+    const filtered = documents.filter(d => 
+      d.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+      d.description.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+    setDocuments(filtered)
+    toast({ title: "Recherche filtrée", description: `${filtered.length} résultats pour "${searchQuery}"` })
   }
 
   const handleShareView = () => {

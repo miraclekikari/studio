@@ -52,7 +52,7 @@ const chatFlow = ai.defineFlow(
         content: [{ text: input.message }] 
       });
 
-      const { text } = await ai.generate({
+      const response = await ai.generate({
         model: 'googleai/gemini-1.5-flash',
         system: `Tu es l'Assistant Studio, un expert en gestion du savoir et en analyse de documents.
         Ton but est d'aider l'utilisateur à organiser ses idées et à synthétiser ses ressources.
@@ -62,6 +62,8 @@ const chatFlow = ai.defineFlow(
         messages: messages
       });
       
+      const text = response.text;
+      
       if (!text) {
         throw new Error("Le modèle n'a renvoyé aucun texte.");
       }
@@ -70,15 +72,16 @@ const chatFlow = ai.defineFlow(
     } catch (error: any) {
       console.error("Assistant Flow Error:", error);
       
-      // Message d'erreur pédagogique si la clé est manquante
-      if (error.message?.includes('API_KEY') || error.message?.includes('key')) {
+      // Message d'erreur pédagogique si la clé est manquante ou invalide
+      const errorMsg = error.message || "";
+      if (errorMsg.includes('API_KEY') || errorMsg.includes('key') || errorMsg.includes('403') || errorMsg.includes('401')) {
         return { 
-          response: "Le Système Studio n'est pas encore activé. Veuillez vérifier votre configuration d'environnement." 
+          response: "Le Système Studio n'est pas encore activé. Veuillez vérifier que votre variable d'environnement GOOGLE_GENAI_API_KEY est bien configurée sur Vercel avec une clé valide." 
         };
       }
       
       return { 
-        response: "Je rencontre une difficulté de connexion avec mes modules d'analyse. Veuillez réessayer dans quelques instants." 
+        response: `Je rencontre une difficulté de connexion avec mes modules d'analyse (${error.message || 'Erreur inconnue'}). Veuillez réessayer dans quelques instants.` 
       };
     }
   }

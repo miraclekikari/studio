@@ -83,7 +83,7 @@ export async function getOrCreateProfile(uid: string, defaultData: Partial<Profi
 }
 
 /**
- * Sauvegarde un document avec les noms de colonnes exacts
+ * Sauvegarde un document avec les noms de colonnes exacts (snake_case)
  */
 export async function saveDocument(doc: Omit<Document, 'id' | 'created_at' | 'likes' | 'views'>) {
   if (!isSupabaseConfigured) throw new Error("Base de données non configurée");
@@ -148,7 +148,7 @@ export async function getDocumentById(id: string): Promise<Document | null> {
 }
 
 /**
- * Incrémentation via RPC
+ * Incrémentation via RPC uniquement
  */
 export async function incrementDocumentViews(id: string) {
   if (!isSupabaseConfigured) return;
@@ -156,15 +156,23 @@ export async function incrementDocumentViews(id: string) {
 }
 
 /**
- * Like via RPC
+ * Like via RPC uniquement
  */
 export async function toggleLikeDocument(docId: string, userId: string) {
   if (!isSupabaseConfigured) return;
   await supabase.rpc('increment_likes', { doc_id: docId });
 }
 
+/**
+ * Récupère les documents d'un utilisateur
+ */
 export async function getUserDocuments(userId: string): Promise<Document[]> {
   if (!isSupabaseConfigured) return [];
-  const { data } = await supabase.from('documents').select('*').eq('user_id', userId).order('created_at', { ascending: false });
+  const { data, error } = await supabase
+    .from('documents')
+    .select('*')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false });
+  if (error) return [];
   return (data as any[]) || [];
 }
