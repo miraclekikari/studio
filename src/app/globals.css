@@ -1,19 +1,18 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
-    --background: 204 44% 95%; /* #EDF4F9 */
+    --background: 210 40% 98%; /* Fond plus doux */
     --foreground: 222 47% 11%;
     --card: 0 0% 100%;
     --card-foreground: 222 47% 11%;
     --popover: 0 0% 100%;
     --popover-foreground: 222 47% 11%;
-    --primary: 208 65% 63%; /* #63A5DE */
+    --primary: 208 65% 55%; /* Bleu plus vibrant */
     --primary-foreground: 210 40% 98%;
-    --secondary: 253 69% 39%; /* #3B1FA8 */
+    --secondary: 253 69% 39%; /* Indigo profond */
     --secondary-foreground: 210 40% 98%;
     --muted: 210 40% 96.1%;
     --muted-foreground: 215.4 16.3% 46.9%;
@@ -24,7 +23,7 @@
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
     --ring: 253 69% 39%;
-    --radius: 0.75rem;
+    --radius: 1.5rem; /* Coins plus arrondis pour un look moderne */
   }
 }
 
@@ -33,9 +32,18 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground font-body;
+    @apply bg-background text-foreground font-body selection:bg-primary/20;
   }
   h1, h2, h3, h4, h5, h6 {
-    @apply font-headline;
+    @apply font-headline tracking-tight;
   }
+}
+
+/* Custom Utilities */
+.glass {
+  @apply bg-white/70 backdrop-blur-md border border-white/20;
+}
+
+.text-gradient {
+  @apply bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary;
 }
