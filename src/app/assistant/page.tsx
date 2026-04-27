@@ -47,7 +47,6 @@ export default function AssistantPage() {
     setLoading(true)
 
     try {
-      // On garde les 6 derniers messages pour le contexte
       const history = messages.slice(-6).map(m => ({ role: m.role, content: m.content }))
       
       const result = await chatWithAssistant({
@@ -61,9 +60,8 @@ export default function AssistantPage() {
         throw new Error("Réponse vide")
       }
     } catch (error) {
-      console.error("Assistant Communication Error:", error)
-      toast({ title: "Accès différé", description: "Vérifiez la configuration de l'API.", variant: "destructive" })
-      setMessages(prev => [...prev, { role: 'model', content: "Désolé, une perturbation technique empêche l'analyse. Vérifiez que la clé API Gemini est bien configurée dans vos secrets." }])
+      console.error("Assistant Error:", error)
+      setMessages(prev => [...prev, { role: 'model', content: "Désolé, une perturbation technique empêche l'analyse. Vérifiez que votre configuration est complète." }])
     } finally {
       setLoading(false)
     }

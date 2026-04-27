@@ -73,12 +73,12 @@ const chatFlow = ai.defineFlow(
       // Message d'erreur pédagogique si la clé est manquante
       if (error.message?.includes('API_KEY') || error.message?.includes('key')) {
         return { 
-          response: "Le Système Studio n'est pas encore activé. Veuillez configurer la clé GOOGLE_GENAI_API_KEY dans vos paramètres d'environnement." 
+          response: "Le Système Studio n'est pas encore activé. Veuillez vérifier votre configuration d'environnement." 
         };
       }
       
       return { 
-        response: "Je rencontre une difficulté de connexion avec mes modules d'analyse. Veuillez vérifier votre connexion ou réessayer plus tard." 
+        response: "Je rencontre une difficulté de connexion avec mes modules d'analyse. Veuillez réessayer dans quelques instants." 
       };
     }
   }
