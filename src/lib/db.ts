@@ -10,6 +10,8 @@ import {
   doc,
   setDoc,
   getDoc,
+  updateDoc,
+  increment,
   limit
 } from 'firebase/firestore';
 
@@ -39,6 +41,7 @@ export interface UserProfile {
   updatedAt: any;
   followers?: number;
   following?: number;
+  interests?: string[];
 }
 
 export const saveDocument = async (data: Omit<DocumentData, 'id' | 'createdAt' | 'likes' | 'views'>) => {
@@ -64,7 +67,14 @@ export const getDocumentById = async (id: string) => {
   }
 };
 
-export const getLatestDocuments = async (count: number = 10) => {
+export const incrementDocumentViews = async (id: string) => {
+  const docRef = doc(db, 'documents', id);
+  await updateDoc(docRef, {
+    views: increment(1)
+  });
+};
+
+export const getLatestDocuments = async (count: number = 20) => {
   try {
     const q = query(collection(db, 'documents'), orderBy('createdAt', 'desc'), limit(count));
     const snapshot = await getDocs(q);
@@ -99,6 +109,7 @@ export const getOrCreateProfile = async (uid: string, defaultData: Partial<UserP
       fullName: defaultData.fullName || 'Utilisateur LibreShare',
       avatarUrl: defaultData.avatarUrl || `https://picsum.photos/seed/${uid}/200/200`,
       bio: defaultData.bio || 'Passionné de savoir.',
+      interests: defaultData.interests || ["Technologie", "Éducation", "Design"],
       updatedAt: serverTimestamp(),
       followers: 0,
       following: 0
