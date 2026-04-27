@@ -13,7 +13,9 @@ import {
   updateDoc,
   increment,
   limit,
-  Timestamp
+  Timestamp,
+  arrayUnion,
+  arrayRemove
 } from 'firebase/firestore';
 
 export interface DocumentData {
@@ -28,6 +30,7 @@ export interface DocumentData {
   userAvatar?: string;
   createdAt: Timestamp | any;
   likes: number;
+  likedBy?: string[];
   views: number;
   format: string;
   tags?: string[];
@@ -50,6 +53,7 @@ export const saveDocument = async (data: Omit<DocumentData, 'id' | 'createdAt' |
     ...data,
     createdAt: serverTimestamp(),
     likes: 0,
+    likedBy: [],
     views: 0
   });
 };
@@ -73,6 +77,29 @@ export const incrementDocumentViews = async (id: string) => {
   await updateDoc(docRef, {
     views: increment(1)
   });
+};
+
+export const toggleLikeDocument = async (docId: string, userId: string) => {
+  const docRef = doc(db, 'documents', docId);
+  const docSnap = await getDoc(docRef);
+  
+  if (!docSnap.exists()) return;
+  
+  const data = docSnap.data() as DocumentData;
+  const likedBy = data.likedBy || [];
+  const isLiked = likedBy.includes(userId);
+
+  if (isLiked) {
+    await updateDoc(docRef, {
+      likes: increment(-1),
+      likedBy: arrayRemove(userId)
+    });
+  } else {
+    await updateDoc(docRef, {
+      likes: increment(1),
+      likedBy: arrayUnion(userId)
+    });
+  }
 };
 
 export const getLatestDocuments = async (count: number = 20) => {
