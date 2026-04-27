@@ -1,5 +1,5 @@
 
-import { supabase } from './supabase';
+import { supabase, isSupabaseConfigured } from './supabase';
 
 export interface Profile {
   id: string;
@@ -30,40 +30,46 @@ export interface Document {
  * Récupère ou crée un profil utilisateur Supabase
  */
 export async function getOrCreateProfile(uid: string, defaultData: Partial<Profile>): Promise<Profile | null> {
-  const { data: profile, error: fetchError } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', uid)
-    .single();
+  if (!isSupabaseConfigured) return null;
 
-  if (profile) return profile;
+  try {
+    const { data: profile, error: fetchError } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', uid)
+      .maybeSingle();
 
-  const newProfile = {
-    id: uid,
-    username: defaultData.username || `user_${uid.substring(0, 5)}`,
-    full_name: defaultData.full_name || 'Utilisateur',
-    avatar_url: defaultData.avatar_url || `https://picsum.photos/seed/${uid}/200/200`,
-    bio: 'Membre de la communauté LibreShare.',
-    interests: ["Technologie", "Éducation"]
-  };
+    if (profile) return profile;
 
-  const { data, error: insertError } = await supabase
-    .from('profiles')
-    .upsert([newProfile])
-    .select()
-    .single();
+    const newProfile = {
+      id: uid,
+      username: defaultData.username || `user_${uid.substring(0, 5)}`,
+      full_name: defaultData.full_name || 'Utilisateur',
+      avatar_url: defaultData.avatar_url || `https://picsum.photos/seed/${uid}/200/200`,
+      bio: 'Membre de la communauté LibreShare.',
+      interests: ["Technologie", "Éducation"]
+    };
 
-  if (insertError) {
-    console.error("Erreur lors de la création du profil:", insertError);
+    const { data, error: insertError } = await supabase
+      .from('profiles')
+      .upsert([newProfile])
+      .select()
+      .single();
+
+    if (insertError) throw insertError;
+    return data;
+  } catch (err) {
+    console.error("Erreur Profil Supabase:", err);
     return null;
   }
-  return data;
 }
 
 /**
  * Enregistre un document dans Supabase
  */
 export async function saveDocument(doc: Omit<Document, 'id' | 'created_at' | 'likes' | 'views'>) {
+  if (!isSupabaseConfigured) throw new Error("Supabase non configuré");
+
   const { data, error } = await supabase
     .from('documents')
     .insert([{ 
@@ -74,10 +80,7 @@ export async function saveDocument(doc: Omit<Document, 'id' | 'created_at' | 'li
     .select()
     .single();
 
-  if (error) {
-    console.error("Erreur insertion document:", error);
-    throw error;
-  }
+  if (error) throw error;
   return data;
 }
 
@@ -85,52 +88,70 @@ export async function saveDocument(doc: Omit<Document, 'id' | 'created_at' | 'li
  * Récupère les derniers documents avec jointure sur profiles
  */
 export async function getLatestDocuments(limitCount: number = 20): Promise<Document[]> {
-  const { data, error } = await supabase
-    .from('documents')
-    .select('*, profiles!user_id(*)')
-    .order('created_at', { ascending: false })
-    .limit(limitCount);
+  if (!isSupabaseConfigured) return [];
 
-  if (error) {
-    console.error("Erreur fetch docs:", error);
+  try {
+    const { data, error } = await supabase
+      .from('documents')
+      .select('*, profiles!user_id(*)')
+      .order('created_at', { ascending: false })
+      .limit(limitCount);
+
+    if (error) {
+      console.error("Erreur fetch docs Supabase:", error);
+      return [];
+    }
+    return (data as any[]) || [];
+  } catch (err) {
+    // Évite de polluer la console avec TypeError: Failed to fetch si l'URL est placeholder
+    if (err instanceof TypeError && err.message === 'Failed to fetch') return [];
+    console.error("Erreur réseau fetch docs:", err);
     return [];
   }
-  return (data as any[]) || [];
 }
 
 /**
  * Récupère un document par son ID
  */
 export async function getDocumentById(id: string): Promise<Document | null> {
+  if (!isSupabaseConfigured) return null;
+
   const { data, error } = await supabase
     .from('documents')
     .select('*, profiles!user_id(*)')
     .eq('id', id)
-    .single();
+    .maybeSingle();
 
   if (error) return null;
   return data as any;
 }
 
 /**
- * Incrémente le compteur de vues (RPC ou update direct)
+ * Incrémente le compteur de vues
  */
 export async function incrementDocumentViews(id: string) {
-  // Dans un vrai projet, on utiliserait une fonction PostgreSQL 'rpc' pour l'atomicité
-  const { data: current } = await supabase.from('documents').select('views').eq('id', id).single();
-  if (current) {
-    await supabase.from('documents').update({ views: (current.views || 0) + 1 }).eq('id', id);
-  }
+  if (!isSupabaseConfigured) return;
+  try {
+    const { data } = await supabase.from('documents').select('views').eq('id', id).single();
+    if (data) {
+      await supabase.from('documents').update({ views: (data.views || 0) + 1 }).eq('id', id);
+    }
+  } catch (e) {}
 }
 
 /**
- * Gère les likes (Incrémentation simple pour ce prototype)
+ * Gère les likes
  */
 export async function toggleLikeDocument(docId: string, userId: string) {
-  const { data: current } = await supabase.from('documents').select('likes').eq('id', docId).single();
-  if (current) {
-    const { error } = await supabase.from('documents').update({ likes: (current.likes || 0) + 1 }).eq('id', docId);
-    if (error) throw error;
+  if (!isSupabaseConfigured) return;
+  try {
+    const { data } = await supabase.from('documents').select('likes').eq('id', docId).single();
+    if (data) {
+      const { error } = await supabase.from('documents').update({ likes: (data.likes || 0) + 1 }).eq('id', docId);
+      if (error) throw error;
+    }
+  } catch (e) {
+    console.error("Erreur Like:", e);
   }
 }
 
@@ -138,6 +159,8 @@ export async function toggleLikeDocument(docId: string, userId: string) {
  * Récupère les documents d'un utilisateur spécifique
  */
 export async function getUserDocuments(userId: string): Promise<Document[]> {
+  if (!isSupabaseConfigured) return [];
+  
   const { data, error } = await supabase
     .from('documents')
     .select('*')

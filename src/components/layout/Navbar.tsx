@@ -16,7 +16,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { supabase } from '@/lib/supabase'
+import { supabase, isSupabaseConfigured } from '@/lib/supabase'
 import { getOrCreateProfile, type Profile } from '@/lib/db'
 import { useToast } from '@/hooks/use-toast'
 
@@ -27,6 +27,11 @@ export function Navbar() {
   const router = useRouter()
 
   useEffect(() => {
+    if (!isSupabaseConfigured) {
+      setLoading(false);
+      return;
+    }
+
     const fetchSession = async () => {
       const { data: { session } } = await supabase.auth.getSession()
       if (session?.user) {

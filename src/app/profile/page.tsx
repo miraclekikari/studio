@@ -13,7 +13,7 @@ import {
   ChevronRight,
   Loader2
 } from 'lucide-react'
-import { supabase } from '@/lib/supabase'
+import { supabase, isSupabaseConfigured } from '@/lib/supabase'
 import { getOrCreateProfile, type Profile } from '@/lib/db'
 
 export default function ProfilePage() {
@@ -21,6 +21,11 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    if (!isSupabaseConfigured) {
+      setLoading(false);
+      return;
+    }
+
     async function getProfile() {
       const { data: { session } } = await supabase.auth.getSession()
       if (session?.user) {
@@ -65,8 +70,12 @@ export default function ProfilePage() {
     return (
       <div className="flex flex-col min-h-screen bg-slate-50">
         <Navbar />
-        <main className="flex-1 flex flex-col items-center justify-center">
-          <p className="text-slate-500">Veuillez vous connecter pour voir votre profil.</p>
+        <main className="flex-1 flex flex-col items-center justify-center p-8 text-center">
+          <h2 className="text-2xl font-bold mb-4">Profil non configuré</h2>
+          <p className="text-slate-500 mb-8">Veuillez vous connecter ou configurer Supabase pour voir votre profil.</p>
+          <Button asChild className="rounded-full px-8">
+            <a href="/auth">Se connecter</a>
+          </Button>
         </main>
       </div>
     )
@@ -107,7 +116,7 @@ export default function ProfilePage() {
               <div className="bg-white rounded-2xl p-6 shadow-sm border">
                 <h3 className="font-headline font-bold text-lg mb-4">À propos</h3>
                 <p className="text-muted-foreground text-sm leading-relaxed mb-6">
-                  {profile.bio || "Membre de la communauté LibreShare."}
+                  {profile.bio || "Membre de la communauté LibreShare sur Supabase."}
                 </p>
                 
                 <div className="space-y-3 text-sm text-muted-foreground">
@@ -133,7 +142,7 @@ export default function ProfilePage() {
                 </div>
                 <div className="p-8 text-center">
                   <FileText className="w-12 h-12 text-slate-200 mx-auto mb-4" />
-                  <p className="text-slate-500">Aucune activité récente pour le moment.</p>
+                  <p className="text-slate-500">Aucune activité récente sur Supabase pour le moment.</p>
                 </div>
               </div>
             </div>

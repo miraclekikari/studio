@@ -5,12 +5,12 @@ import React, { useEffect, useState } from 'react'
 import { Navbar } from '@/components/layout/Navbar'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Library, Plus, Search, List, LayoutGrid, Loader2 } from 'lucide-react'
+import { Library, Search, List, LayoutGrid, Loader2 } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { DocumentCard } from '@/components/documents/DocumentCard'
 import { UploadDocument } from '@/components/documents/UploadDocument'
 import { getUserDocuments, type Document } from '@/lib/db'
-import { supabase } from '@/lib/supabase'
+import { supabase, isSupabaseConfigured } from '@/lib/supabase'
 
 export default function LibraryPage() {
   const [documents, setDocuments] = useState<Document[]>([])
@@ -18,6 +18,11 @@ export default function LibraryPage() {
   const [userId, setUserId] = useState<string | null>(null)
 
   useEffect(() => {
+    if (!isSupabaseConfigured) {
+      setLoading(false);
+      return;
+    }
+
     async function getSession() {
       const { data: { session } } = await supabase.auth.getSession()
       if (session?.user) {
@@ -62,7 +67,7 @@ export default function LibraryPage() {
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
           <div>
             <h1 className="text-5xl font-headline font-bold text-slate-900 tracking-tight">Ma Bibliothèque</h1>
-            <p className="text-slate-500 mt-3 text-lg">Gérez vos savoirs partagés et vos favoris.</p>
+            <p className="text-slate-500 mt-3 text-lg">Gérez vos savoirs partagés.</p>
           </div>
           
           <div className="flex items-center gap-2">
@@ -90,7 +95,11 @@ export default function LibraryPage() {
           </div>
 
           <TabsContent value="all" className="mt-0">
-            {loading ? (
+            {!isSupabaseConfigured ? (
+               <div className="text-center py-20 bg-white rounded-[2.5rem] border border-dashed border-slate-200">
+                <p className="text-slate-500 font-bold uppercase tracking-widest text-xs">Configuration Supabase manquante</p>
+              </div>
+            ) : loading ? (
               <div className="flex flex-col items-center justify-center py-20">
                 <Loader2 className="w-10 h-10 text-primary animate-spin mb-4" />
                 <p className="text-slate-400">Chargement de votre bibliothèque...</p>
@@ -115,7 +124,7 @@ export default function LibraryPage() {
               <div className="text-center py-20 bg-white rounded-[2.5rem] border border-dashed border-slate-200 shadow-sm">
                 <Library className="w-16 h-16 text-slate-200 mx-auto mb-6" />
                 <h3 className="text-2xl font-headline font-bold text-slate-800">Votre bibliothèque est vide</h3>
-                <p className="text-slate-500 mt-3 max-w-md mx-auto">Commencez par partager votre premier document sur Supabase.</p>
+                <p className="text-slate-500 mt-3 max-w-md mx-auto">Commencez par partager votre premier document.</p>
                 <div className="mt-10">
                   <UploadDocument />
                 </div>

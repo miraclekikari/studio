@@ -2,15 +2,15 @@
 "use client"
 
 import React, { useEffect, useState } from 'react'
-import Link from 'next/link'
 import { Navbar } from '@/components/layout/Navbar'
 import { DocumentCard } from '@/components/documents/DocumentCard'
 import { RecommendationList } from '@/components/documents/RecommendationList'
 import { UploadDocument } from '@/components/documents/UploadDocument'
 import { Button } from '@/components/ui/button'
-import { Filter, TrendingUp, Clock, Star, Library, Loader2, Sparkles } from 'lucide-react'
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Filter, Library, Loader2, Sparkles, AlertCircle } from 'lucide-react'
 import { getLatestDocuments, type Document } from '@/lib/db'
+import { isSupabaseConfigured } from '@/lib/supabase'
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
 export default function Home() {
   const [documents, setDocuments] = useState<Document[]>([])
@@ -18,6 +18,10 @@ export default function Home() {
 
   useEffect(() => {
     async function fetchDocs() {
+      if (!isSupabaseConfigured) {
+        setLoading(false);
+        return;
+      }
       try {
         const docs = await getLatestDocuments()
         setDocuments(docs)
@@ -35,6 +39,16 @@ export default function Home() {
       <Navbar />
       
       <main className="flex-1 container mx-auto px-4 py-8">
+        {!isSupabaseConfigured && (
+          <Alert variant="destructive" className="mb-8 rounded-2xl border-none shadow-lg bg-red-50 text-red-900 border-red-200">
+            <AlertCircle className="h-5 w-5 text-red-600" />
+            <AlertTitle className="font-bold">Configuration Requise</AlertTitle>
+            <AlertDescription className="text-sm">
+              Veuillez ajouter vos clés <strong>NEXT_PUBLIC_SUPABASE_URL</strong> et <strong>NEXT_PUBLIC_SUPABASE_ANON_KEY</strong> dans vos variables d'environnement Vercel ou IDX pour activer la bibliothèque.
+            </AlertDescription>
+          </Alert>
+        )}
+
         {/* Hero Section */}
         <div className="relative mb-16 overflow-hidden bg-gradient-to-br from-primary/10 via-background to-secondary/5 rounded-[2.5rem] border shadow-2xl">
           <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_30%_20%,rgba(99,165,222,0.1),transparent)]" />
@@ -43,7 +57,7 @@ export default function Home() {
             <div className="flex-1 space-y-6 text-center lg:text-left">
               <div className="inline-flex items-center gap-2 px-4 py-2 bg-white rounded-full border shadow-sm">
                 <Sparkles className="w-4 h-4 text-primary animate-pulse" />
-                <span className="text-xs font-bold uppercase tracking-wider text-primary">Nouveau : IA Document tagging</span>
+                <span className="text-xs font-bold uppercase tracking-wider text-primary">Nouveau : IA Recommandations</span>
               </div>
               
               <h1 className="text-5xl md:text-7xl font-headline font-bold text-slate-900 leading-[1.1] tracking-tight">
@@ -67,7 +81,7 @@ export default function Home() {
                 <div className="absolute -inset-1 bg-gradient-to-r from-primary to-secondary rounded-2xl blur opacity-25 group-hover:opacity-40 transition duration-1000"></div>
                 <div className="relative aspect-[4/3] rounded-2xl overflow-hidden shadow-2xl border-8 border-white">
                   <img 
-                    src="https://picsum.photos/seed/community/800/600" 
+                    src="https://picsum.photos/seed/community-supa/800/600" 
                     alt="LibreShare Community" 
                     className="object-cover w-full h-full"
                   />
@@ -77,7 +91,7 @@ export default function Home() {
           </div>
         </div>
 
-        <RecommendationList />
+        {isSupabaseConfigured && <RecommendationList />}
 
         {/* Discovery Feed */}
         <section className="mt-16">
@@ -98,7 +112,7 @@ export default function Home() {
           {loading ? (
             <div className="flex flex-col items-center justify-center py-20 gap-4">
               <Loader2 className="w-12 h-12 text-primary animate-spin" />
-              <p className="text-slate-400 font-medium">Récupération des données Supabase...</p>
+              <p className="text-slate-400 font-medium">Récupération des données...</p>
             </div>
           ) : documents.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-10">
@@ -118,10 +132,10 @@ export default function Home() {
               ))}
             </div>
           ) : (
-            <div className="text-center py-20 bg-white rounded-3xl border border-dashed">
+            <div className="text-center py-20 bg-white rounded-3xl border border-dashed border-slate-200">
               <Library className="w-16 h-16 text-slate-200 mx-auto mb-4" />
-              <h3 className="text-2xl font-bold text-slate-800">Aucun document</h3>
-              <p className="text-slate-500 mt-2">Partagez votre premier document Supabase dès maintenant.</p>
+              <h3 className="text-2xl font-bold text-slate-800">Aucun document trouvé</h3>
+              <p className="text-slate-500 mt-2">Partagez votre premier document pour commencer.</p>
               <div className="mt-8">
                 <UploadDocument />
               </div>
