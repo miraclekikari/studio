@@ -12,7 +12,8 @@ import {
   getDoc,
   updateDoc,
   increment,
-  limit
+  limit,
+  Timestamp
 } from 'firebase/firestore';
 
 export interface DocumentData {
@@ -25,7 +26,7 @@ export interface DocumentData {
   userId: string;
   userName: string;
   userAvatar?: string;
-  createdAt: any;
+  createdAt: Timestamp | any;
   likes: number;
   views: number;
   format: string;
@@ -38,7 +39,7 @@ export interface UserProfile {
   fullName: string;
   avatarUrl: string;
   bio: string;
-  updatedAt: any;
+  updatedAt: Timestamp | any;
   followers?: number;
   following?: number;
   interests?: string[];
@@ -62,7 +63,7 @@ export const getDocumentById = async (id: string) => {
     }
     return null;
   } catch (error) {
-    console.error("Erreur lors de la récupération du document:", error);
+    console.error("Erreur Firestore (getDocumentById):", error);
     return null;
   }
 };
@@ -80,7 +81,7 @@ export const getLatestDocuments = async (count: number = 20) => {
     const snapshot = await getDocs(q);
     return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as DocumentData));
   } catch (error) {
-    console.error("Erreur lors de la récupération des documents:", error);
+    console.error("Erreur Firestore (getLatestDocuments):", error);
     return [];
   }
 };
@@ -91,7 +92,7 @@ export const getUserDocuments = async (userId: string) => {
     const snapshot = await getDocs(q);
     return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as DocumentData));
   } catch (error) {
-    console.error("Erreur lors de la récupération des documents utilisateur:", error);
+    console.error("Erreur Firestore (getUserDocuments):", error);
     return [];
   }
 };
@@ -103,7 +104,7 @@ export const getOrCreateProfile = async (uid: string, defaultData: Partial<UserP
   if (docSnap.exists()) {
     return docSnap.data() as UserProfile;
   } else {
-    const newProfile = {
+    const newProfile: UserProfile = {
       uid,
       username: defaultData.username || `user_${uid.substring(0, 5)}`,
       fullName: defaultData.fullName || 'Utilisateur LibreShare',

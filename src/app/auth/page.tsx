@@ -1,4 +1,3 @@
-
 "use client"
 
 import React, { useState } from 'react'
@@ -15,10 +14,10 @@ import {
   signInWithEmailAndPassword, 
   signInWithPopup, 
   GoogleAuthProvider,
-  updateProfile
+  updateProfile as firebaseUpdateProfile
 } from 'firebase/auth'
 import { useToast } from '@/hooks/use-toast'
-import { Loader2, Library, Mail, Lock, User, Github } from 'lucide-react'
+import { Loader2, Library, Mail, Lock, User } from 'lucide-react'
 import { getOrCreateProfile } from '@/lib/db'
 
 export default function AuthPage() {
@@ -40,6 +39,7 @@ export default function AuthPage() {
     const provider = new GoogleAuthProvider()
     try {
       const result = await signInWithPopup(auth, provider)
+      // Synchronisation immédiate avec Firestore
       await getOrCreateProfile(result.user.uid, {
         fullName: result.user.displayName || 'Utilisateur',
         avatarUrl: result.user.photoURL || ''
@@ -72,11 +72,14 @@ export default function AuthPage() {
     setLoading(true)
     try {
       const result = await createUserWithEmailAndPassword(auth, regEmail, regPassword)
-      await updateProfile(result.user, { displayName: regName })
+      await firebaseUpdateProfile(result.user, { displayName: regName })
+      
+      // Création du profil Firestore pour la synchronisation
       await getOrCreateProfile(result.user.uid, {
         fullName: regName,
         username: regName.toLowerCase().replace(/\s/g, '_')
       })
+      
       toast({ title: "Compte créé !", description: "Bienvenue sur LibreShare." })
       router.push('/')
     } catch (error: any) {
@@ -100,13 +103,13 @@ export default function AuthPage() {
           </div>
 
           <Tabs defaultValue="login" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 rounded-xl h-12 mb-8">
-              <TabsTrigger value="login" className="rounded-lg">Connexion</TabsTrigger>
-              <TabsTrigger value="register" className="rounded-lg">Inscription</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-2 rounded-xl h-12 mb-8 bg-slate-100">
+              <TabsTrigger value="login" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">Connexion</TabsTrigger>
+              <TabsTrigger value="register" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">Inscription</TabsTrigger>
             </TabsList>
 
             <TabsContent value="login">
-              <Card className="border-none shadow-2xl rounded-[2rem] overflow-hidden">
+              <Card className="border-none shadow-2xl rounded-[2.5rem] overflow-hidden bg-white">
                 <CardHeader>
                   <CardTitle className="text-2xl font-headline font-bold">Bienvenue</CardTitle>
                   <CardDescription>Entrez vos identifiants pour vous connecter.</CardDescription>
@@ -121,7 +124,7 @@ export default function AuthPage() {
                           id="email" 
                           type="email" 
                           placeholder="nom@exemple.com" 
-                          className="pl-10"
+                          className="pl-10 rounded-xl"
                           value={loginEmail}
                           onChange={(e) => setLoginEmail(e.target.value)}
                           required 
@@ -129,16 +132,13 @@ export default function AuthPage() {
                       </div>
                     </div>
                     <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <Label htmlFor="password">Mot de passe</Label>
-                        <Button variant="link" className="px-0 h-auto text-xs" type="button">Oublié ?</Button>
-                      </div>
+                      <Label htmlFor="password">Mot de passe</Label>
                       <div className="relative">
                         <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                         <Input 
                           id="password" 
                           type="password" 
-                          className="pl-10"
+                          className="pl-10 rounded-xl"
                           value={loginPassword}
                           onChange={(e) => setLoginPassword(e.target.value)}
                           required 
@@ -147,18 +147,18 @@ export default function AuthPage() {
                     </div>
                   </CardContent>
                   <CardFooter className="flex flex-col gap-4">
-                    <Button className="w-full rounded-full h-12 font-bold" disabled={loading} type="submit">
+                    <Button className="w-full rounded-full h-12 font-bold shadow-lg shadow-primary/20" disabled={loading} type="submit">
                       {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                       Se connecter
                     </Button>
                     <div className="relative w-full">
                       <div className="absolute inset-0 flex items-center"><span className="w-full border-t" /></div>
-                      <div className="relative flex justify-center text-xs uppercase"><span className="bg-white px-2 text-slate-500">Ou continuer avec</span></div>
+                      <div className="relative flex justify-center text-xs uppercase"><span className="bg-white px-2 text-slate-400">Ou continuer avec</span></div>
                     </div>
                     <Button 
                       type="button" 
                       variant="outline" 
-                      className="w-full rounded-full h-12 font-bold border-slate-200" 
+                      className="w-full rounded-full h-12 font-bold border-slate-200 hover:bg-slate-50 transition-colors" 
                       onClick={handleGoogleSignIn}
                       disabled={loading}
                     >
@@ -171,7 +171,7 @@ export default function AuthPage() {
             </TabsContent>
 
             <TabsContent value="register">
-              <Card className="border-none shadow-2xl rounded-[2rem] overflow-hidden">
+              <Card className="border-none shadow-2xl rounded-[2.5rem] overflow-hidden bg-white">
                 <CardHeader>
                   <CardTitle className="text-2xl font-headline font-bold">Créer un compte</CardTitle>
                   <CardDescription>Commencez à partager vos connaissances dès aujourd'hui.</CardDescription>
@@ -185,7 +185,7 @@ export default function AuthPage() {
                         <Input 
                           id="name" 
                           placeholder="Jean Dupont" 
-                          className="pl-10"
+                          className="pl-10 rounded-xl"
                           value={regName}
                           onChange={(e) => setRegName(e.target.value)}
                           required 
@@ -200,7 +200,7 @@ export default function AuthPage() {
                           id="reg-email" 
                           type="email" 
                           placeholder="nom@exemple.com" 
-                          className="pl-10"
+                          className="pl-10 rounded-xl"
                           value={regEmail}
                           onChange={(e) => setRegEmail(e.target.value)}
                           required 
@@ -214,7 +214,7 @@ export default function AuthPage() {
                         <Input 
                           id="reg-password" 
                           type="password" 
-                          className="pl-10"
+                          className="pl-10 rounded-xl"
                           value={regPassword}
                           onChange={(e) => setRegPassword(e.target.value)}
                           required 
@@ -223,17 +223,9 @@ export default function AuthPage() {
                     </div>
                   </CardContent>
                   <CardFooter className="flex flex-col gap-4">
-                    <Button className="w-full rounded-full h-12 font-bold" disabled={loading} type="submit">
+                    <Button className="w-full rounded-full h-12 font-bold shadow-lg shadow-primary/20" disabled={loading} type="submit">
                       {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                       S'inscrire
-                    </Button>
-                    <Button 
-                      type="button" 
-                      variant="ghost" 
-                      className="text-slate-500 text-xs"
-                      onClick={() => handleGoogleSignIn}
-                    >
-                      En vous inscrivant, vous acceptez nos CGU.
                     </Button>
                   </CardFooter>
                 </form>
