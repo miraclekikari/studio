@@ -47,6 +47,7 @@ export default function AssistantPage() {
     setLoading(true)
 
     try {
+      // On garde les 6 derniers messages pour le contexte
       const history = messages.slice(-6).map(m => ({ role: m.role, content: m.content }))
       
       const result = await chatWithAssistant({

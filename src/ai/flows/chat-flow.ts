@@ -42,7 +42,7 @@ const chatFlow = ai.defineFlow(
 
       // Construction des messages pour Gemini
       const messages = (input.history || []).map(h => ({
-        role: h.role,
+        role: h.role as 'user' | 'model',
         content: [{ text: h.content }]
       }));
 
@@ -69,9 +69,16 @@ const chatFlow = ai.defineFlow(
       return { response: text };
     } catch (error: any) {
       console.error("Assistant Flow Error:", error);
-      // Message plus informatif pour le debug (sera caché en production)
+      
+      // Message d'erreur pédagogique si la clé est manquante
+      if (error.message?.includes('API_KEY') || error.message?.includes('key')) {
+        return { 
+          response: "Le Système Studio n'est pas encore activé. Veuillez configurer la clé GOOGLE_GENAI_API_KEY dans vos paramètres d'environnement." 
+        };
+      }
+      
       return { 
-        response: `Je rencontre une difficulté de connexion avec mes modules d'analyse. Veuillez vérifier que la clé API est bien configurée.` 
+        response: "Je rencontre une difficulté de connexion avec mes modules d'analyse. Veuillez vérifier votre connexion ou réessayer plus tard." 
       };
     }
   }
