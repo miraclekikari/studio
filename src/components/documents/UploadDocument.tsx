@@ -15,50 +15,45 @@ export function UploadDocument() {
 
   return (
     <CldUploadWidget 
-      uploadPreset="ml_default" 
+      uploadPreset="ml_default"
+      options={{
+        cloudName: "dslxm58ng",
+        maxFiles: 1,
+        clientAllowedFormats: ["pdf", "png", "jpg", "jpeg", "docx"],
+      }}
       onSuccess={async (results) => {
         const info = results.info as any
         const user = auth.currentUser
         setIsProcessing(true)
 
         try {
-          // Utilisation de l'IA pour suggérer des tags basés sur le nom du fichier
-          // (Idéalement on passerait le contenu, mais ici on simule avec le titre)
           let aiTags: string[] = []
           try {
             const tagResult = await automatedDocumentTagging({ 
-              documentContent: `Document title: ${info.original_filename}. Description: Shared on LibreShare.` 
+              documentContent: `Document title: ${info.original_filename}. File format: ${info.format}.` 
             })
             aiTags = tagResult.tags
           } catch (e) {
-            console.error("AI tagging failed", e)
+            aiTags = ["Général"]
           }
 
           await saveDocument({
             title: info.original_filename,
-            description: "Document partagé via LibreShare",
+            description: "Document partagé sur LibreShare.",
             fileUrl: info.secure_url,
             thumbnailUrl: info.thumbnail_url || `https://placehold.co/400x600?text=${info.original_filename}`,
             category: "Général",
             userId: user?.uid || "anonymous",
-            userName: user?.displayName || "Utilisateur",
+            userName: user?.displayName || "Anonyme",
             userAvatar: user?.photoURL || "",
             format: info.format || "pdf",
             tags: aiTags
           })
 
-          toast({
-            title: "Succès ! 🚀",
-            description: "Votre document est en ligne et a été analysé par l'IA.",
-          })
-          
+          toast({ title: "Document partagé !", description: "L'IA a analysé votre contenu." })
           window.location.reload()
         } catch (error) {
-          toast({
-            variant: "destructive",
-            title: "Erreur",
-            description: "Impossible d'enregistrer les données du document.",
-          })
+          toast({ variant: "destructive", title: "Erreur", description: "Échec de la sauvegarde." })
         } finally {
           setIsProcessing(false)
         }
@@ -69,15 +64,10 @@ export function UploadDocument() {
           onClick={() => open()}
           size="lg"
           disabled={isProcessing}
-          className="rounded-full px-8 flex items-center gap-2 bg-primary hover:bg-primary/90 shadow-xl transition-all hover:scale-105 group"
+          className="rounded-full px-8 flex items-center gap-2 bg-primary hover:bg-primary/90 shadow-xl transition-all hover:scale-105"
         >
-          {isProcessing ? (
-            <Loader2 className="w-5 h-5 animate-spin" />
-          ) : (
-            <Plus className="w-5 h-5 transition-transform group-hover:rotate-90" />
-          )}
-          <span className="font-bold">{isProcessing ? "Traitement IA..." : "Partager un Savoir"}</span>
-          {!isProcessing && <Sparkles className="w-4 h-4 text-yellow-300 ml-1 animate-pulse" />}
+          {isProcessing ? <Loader2 className="w-5 h-5 animate-spin" /> : <Plus className="w-5 h-5" />}
+          <span className="font-bold">{isProcessing ? "Analyse..." : "Partager"}</span>
         </Button>
       )}
     </CldUploadWidget>

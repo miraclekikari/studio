@@ -2,9 +2,9 @@ import { MetadataRoute } from 'next'
  
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'LibreShare - Partage de Savoir',
+    name: 'LibreShare Studio',
     short_name: 'LibreShare',
-    description: 'Une plateforme sociale pour partager et découvrir des documents propulsée par l\'IA.',
+    description: 'Une bibliothèque sociale propulsée par l\'IA.',
     start_url: '/',
     display: 'standalone',
     background_color: '#F8FAFC',
