@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview A Genkit flow for generating AI-powered summaries of documents.
@@ -22,6 +23,7 @@ export async function summarizeDocument(input: SummarizeDocumentInput): Promise<
 
 const prompt = ai.definePrompt({
   name: 'summarizeDocumentPrompt',
+  model: 'googleai/gemini-1.5-flash',
   input: {schema: SummarizeDocumentInputSchema},
   output: {schema: SummarizeDocumentOutputSchema},
   prompt: `Please provide a concise summary of the following document content in French.

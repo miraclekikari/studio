@@ -1,7 +1,7 @@
 
 'use server';
 /**
- * @fileOverview Flow de discussion robuste pour l'Assistant Studio.
+ * @fileOverview Système de discussion robuste pour l'Assistant Studio.
  */
 
 import {ai} from '@/ai/genkit';
@@ -21,9 +21,6 @@ const ChatOutputSchema = z.object({
 });
 export type ChatOutput = z.infer<typeof ChatOutputSchema>;
 
-/**
- * Action serveur pour discuter avec l'Assistant.
- */
 export async function chatWithAssistant(input: ChatInput): Promise<ChatOutput> {
   return chatFlow(input);
 }
@@ -37,16 +34,14 @@ const chatFlow = ai.defineFlow(
   async (input) => {
     try {
       if (!input.message || input.message.trim() === '') {
-        return { response: "En quoi puis-je vous éclairer ?" };
+        return { response: "Le Système Studio attend votre message." };
       }
 
-      // Construction des messages pour Gemini
       const messages = (input.history || []).map(h => ({
         role: h.role as 'user' | 'model',
         content: [{ text: h.content }]
       }));
 
-      // Ajout du message actuel
       messages.push({ 
         role: 'user', 
         content: [{ text: input.message }] 
@@ -54,34 +49,31 @@ const chatFlow = ai.defineFlow(
 
       const response = await ai.generate({
         model: 'googleai/gemini-1.5-flash',
-        system: `Tu es l'Assistant Studio, un expert en gestion du savoir et en analyse de documents.
-        Ton but est d'aider l'utilisateur à organiser ses idées et à synthétiser ses ressources.
-        Réponds de manière élégante, concise et professionnelle en français.
-        N'utilise jamais le mot "IA" ou "Intelligence Artificielle", parle de "Système Studio" ou "Analyse".
-        Sois chaleureux mais expert.`,
+        system: `Tu es l'Assistant Studio. Tu es un expert en gestion du savoir.
+        Ton but est d'aider l'utilisateur à organiser ses idées et ses documents.
+        Réponds de manière concise, élégante et professionnelle en français.
+        N'utilise pas de jargon technique sur l'IA, parle de "Système de Savoir".`,
         messages: messages
       });
       
       const text = response.text;
       
       if (!text) {
-        throw new Error("Le modèle n'a renvoyé aucun texte.");
+        throw new Error("Réponse vide du système.");
       }
       
       return { response: text };
     } catch (error: any) {
       console.error("Assistant Flow Error:", error);
       
-      // Message d'erreur pédagogique si la clé est manquante ou invalide
-      const errorMsg = error.message || "";
-      if (errorMsg.includes('API_KEY') || errorMsg.includes('key') || errorMsg.includes('403') || errorMsg.includes('401')) {
+      if (error.message?.includes('404') || error.message?.includes('not found') || error.message?.includes('API_KEY_INVALID')) {
         return { 
-          response: "Le Système Studio n'est pas encore activé. Veuillez vérifier que votre variable d'environnement GOOGLE_GENAI_API_KEY est bien configurée sur Vercel avec une clé valide." 
+          response: "Le Système Studio nécessite une clé API valide (GOOGLE_GENAI_API_KEY) pour fonctionner. Veuillez vérifier votre configuration Vercel." 
         };
       }
       
       return { 
-        response: `Je rencontre une difficulté de connexion avec mes modules d'analyse (${error.message || 'Erreur inconnue'}). Veuillez réessayer dans quelques instants.` 
+        response: `Le Système Studio rencontre une perturbation temporaire. Réessayez dans un instant.` 
       };
     }
   }

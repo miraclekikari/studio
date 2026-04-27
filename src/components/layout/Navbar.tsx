@@ -1,3 +1,4 @@
+
 "use client"
 
 import React, { useEffect, useState } from 'react'
@@ -22,7 +23,9 @@ import { cn } from '@/lib/utils'
 export function Navbar() {
   const [profile, setProfile] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
+  const [searchQuery, setSearchQuery] = useState('')
   const pathname = usePathname()
+  const router = useRouter()
 
   useEffect(() => {
     if (!isSupabaseConfigured) {
@@ -66,6 +69,13 @@ export function Navbar() {
     window.location.href = '/'
   }
 
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (searchQuery.trim()) {
+      router.push(`/explore?q=${encodeURIComponent(searchQuery.trim())}`)
+    }
+  }
+
   return (
     <nav className="sticky top-0 z-50 w-full border-b bg-white/80 backdrop-blur-md">
       <div className="container mx-auto px-4 h-16 flex items-center justify-between gap-6">
@@ -107,13 +117,15 @@ export function Navbar() {
         </div>
 
         <div className="flex items-center gap-4">
-          <div className="relative hidden md:block">
+          <form onSubmit={handleSearch} className="relative hidden md:block">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
             <Input 
               placeholder="Rechercher..." 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10 bg-slate-100 border-none rounded-full h-10 w-48 focus:w-64 transition-all duration-300 focus-visible:ring-primary"
             />
-          </div>
+          </form>
 
           {loading ? (
             <div className="w-10 h-10 rounded-full bg-slate-100 animate-pulse" />

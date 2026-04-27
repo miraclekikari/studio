@@ -1,10 +1,7 @@
+
 'use server';
 /**
  * @fileOverview This file implements a Genkit flow for generating personalized document recommendations.
- *
- * - personalizedDocumentRecommendations - A function that provides document recommendations based on user data.
- * - PersonalizedDocumentRecommendationsInput - The input type for the recommendation function.
- * - PersonalizedDocumentRecommendationsOutput - The return type for the recommendation function.
  */
 
 import {ai} from '@/ai/genkit';
@@ -59,6 +56,7 @@ export async function personalizedDocumentRecommendations(
 
 const personalizedDocumentRecommendationsPrompt = ai.definePrompt({
   name: 'personalizedDocumentRecommendationsPrompt',
+  model: 'googleai/gemini-1.5-flash',
   input: {schema: PersonalizedDocumentRecommendationsInputSchema},
   output: {schema: PersonalizedDocumentRecommendationsOutputSchema},
   prompt: `You are an expert librarian and content recommender. Your task is to suggest documents from a given list that are highly relevant to a user, based on their interests and past interactions.
