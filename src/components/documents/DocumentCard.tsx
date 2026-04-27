@@ -19,13 +19,12 @@ interface DocumentCardProps {
   author: string;
   authorAvatar?: string;
   thumbnail: string;
-  tags: string[];
   views: number;
   likes: number;
   type: string;
 }
 
-export function DocumentCard({ id, title, author, authorAvatar, thumbnail, tags, views, likes, type }: DocumentCardProps) {
+export function DocumentCard({ id, title, author, authorAvatar, thumbnail, views, likes, type }: DocumentCardProps) {
   const { toast } = useToast()
   const [currentLikes, setCurrentLikes] = useState(likes)
   const [userId, setUserId] = useState<string | null>(null)
@@ -43,7 +42,7 @@ export function DocumentCard({ id, title, author, authorAvatar, thumbnail, tags,
     if (!userId) {
       toast({
         title: "Connexion requise",
-        description: "Connectez-vous pour aimer ce document.",
+        description: "Connectez-vous pour soutenir ce savoir.",
         variant: "destructive"
       })
       return
@@ -56,6 +55,14 @@ export function DocumentCard({ id, title, author, authorAvatar, thumbnail, tags,
     } catch (error) {
       console.error(error)
     }
+  }
+
+  const handleShare = (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    const url = `${window.location.origin}/document/${id}`
+    navigator.clipboard.writeText(url)
+    toast({ title: "Lien copié !", description: "Le savoir est prêt à être partagé." })
   }
 
   return (
@@ -99,7 +106,7 @@ export function DocumentCard({ id, title, author, authorAvatar, thumbnail, tags,
             </Avatar>
             <span className="text-sm text-slate-500 font-semibold">{author}</span>
           </div>
-          <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-primary rounded-full">
+          <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-primary rounded-full" onClick={handleShare}>
             <Share2 className="w-4 h-4" />
           </Button>
         </div>
@@ -118,13 +125,6 @@ export function DocumentCard({ id, title, author, authorAvatar, thumbnail, tags,
             <Eye className="w-4 h-4" />
             <span className="text-xs font-bold">{views}</span>
           </div>
-        </div>
-        <div className="flex gap-1.5">
-          {tags.slice(0, 1).map(tag => (
-            <span key={tag} className="text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-md uppercase tracking-wider">
-              {tag}
-            </span>
-          ))}
         </div>
       </CardFooter>
     </Card>

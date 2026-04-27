@@ -3,7 +3,7 @@ import {genkit} from 'genkit';
 import {googleAI} from '@genkit-ai/google-genai';
 
 /**
- * Configuration Genkit ultra-stable.
+ * Configuration Genkit ultra-stable pour l'Expertise Studio.
  */
 export const ai = genkit({
   plugins: [

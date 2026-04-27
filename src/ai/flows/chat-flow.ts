@@ -34,7 +34,7 @@ const chatFlow = ai.defineFlow(
   async (input) => {
     try {
       if (!input.message?.trim()) {
-        return { response: "Le Système Studio est à votre écoute. Posez votre question." };
+        return { response: "L'Expertise Studio est prête. Posez votre question sur vos ressources." };
       }
 
       const messages = (input.history || []).map(h => ({
@@ -49,17 +49,17 @@ const chatFlow = ai.defineFlow(
 
       const response = await ai.generate({
         model: MODEL_ID,
-        system: `Tu es l'Assistant Studio, un expert en gestion du savoir.
+        system: `Tu es l'Expert Studio, un spécialiste en gestion du savoir.
         Ton but est d'analyser les idées et d'aider à organiser les ressources numériques.
         Réponds de manière concise, professionnelle et inspirante en français.
-        Évite le jargon technique.`,
+        Évite tout jargon technique sur l'IA ou les bases de données.`,
         messages: messages
       });
       
-      const responseText = response.text; // Syntaxe correcte Genkit 1.x
+      const responseText = response.text;
       
       if (!responseText) {
-        throw new Error("Réponse vide du système.");
+        throw new Error("Réponse vide du système d'analyse.");
       }
       
       return { response: responseText };
@@ -68,12 +68,12 @@ const chatFlow = ai.defineFlow(
       
       if (error.message?.includes('404') || error.message?.includes('API_KEY_INVALID')) {
         return { 
-          response: "Configuration API requise. Veuillez vérifier vos variables d'environnement (GOOGLE_GENAI_API_KEY)." 
+          response: "Configuration requise. Le système d'analyse attend sa clé d'accès (GOOGLE_GENAI_API_KEY)." 
         };
       }
       
       return { 
-        response: "Une interruption technique momentanée empêche l'analyse. Réessayez dans un instant." 
+        response: "Une interruption momentanée empêche l'analyse. Merci de patienter un instant." 
       };
     }
   }

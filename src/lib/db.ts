@@ -22,7 +22,6 @@ export interface Document {
   likes: number;
   views: number;
   format: string;
-  tags: string[];
   created_at: string;
   profiles?: Profile;
 }
@@ -82,7 +81,7 @@ export async function getOrCreateProfile(uid: string, defaultData: Partial<Profi
 }
 
 /**
- * Sauvegarde un document.
+ * Sauvegarde un document sans la colonne 'tags' qui cause l'erreur.
  */
 export async function saveDocument(doc: Omit<Document, 'id' | 'created_at' | 'likes' | 'views'>) {
   if (!isSupabaseConfigured) throw new Error("Base de données non configurée");
@@ -94,7 +93,6 @@ export async function saveDocument(doc: Omit<Document, 'id' | 'created_at' | 'li
     category: doc.category,
     user_id: doc.user_id,
     format: doc.format,
-    tags: doc.tags,
     likes: 0, 
     views: 0 
   }]).select().single();
@@ -103,14 +101,14 @@ export async function saveDocument(doc: Omit<Document, 'id' | 'created_at' | 'li
 }
 
 /**
- * Récupère les derniers documents.
+ * Récupère les derniers documents avec jointure profil simplifiée.
  */
 export async function getLatestDocuments(limitCount: number = 20, category?: string): Promise<Document[]> {
   if (!isSupabaseConfigured) return [];
   try {
     let query = supabase
       .from('documents')
-      .select('*, profiles:user_id(*)') // Simplification de la jointure pour éviter l'erreur 400
+      .select('*, profiles:user_id(*)')
       .order('created_at', { ascending: false })
       .limit(limitCount);
       

@@ -8,12 +8,10 @@ import { Plus, Loader2 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { saveDocument } from '@/lib/db'
 import { supabase, isSupabaseConfigured } from '@/lib/supabase'
-import { automatedDocumentTagging } from '@/ai/flows/automated-document-tagging'
 import { useRouter } from 'next/navigation'
 
 export function UploadDocument() {
   const { toast } = useToast()
-  const router = useRouter()
   const [isProcessing, setIsProcessing] = React.useState(false)
 
   const handleUploadSuccess = async (results: any) => {
@@ -31,33 +29,18 @@ export function UploadDocument() {
       const file_url = info.secure_url;
       const thumbnail_url = info.thumbnail_url || `https://placehold.co/400x600?text=${encodeURIComponent(info.original_filename || 'Doc')}`;
 
-      // Tâchage IA (optionnel et sécurisé)
-      let aiTags: string[] = ["Général", info.format || "fichier"]
-      try {
-        const tagResult = await automatedDocumentTagging({ 
-          documentContent: `Titre: ${info.original_filename}. Format: ${info.format}.` 
-        })
-        if (tagResult && tagResult.tags) {
-          aiTags = tagResult.tags
-        }
-      } catch (e) {
-        console.warn("AI Tagging skipped:", e)
-      }
-
       await saveDocument({
         title: info.original_filename || "Document sans titre",
-        description: "Partagé via Studio.",
+        description: "Partagé via l'Expertise Studio.",
         file_url: file_url,
         thumbnail_url: thumbnail_url,
         category: "Savoirs",
         user_id: user.id,
-        format: info.format || "pdf",
-        tags: aiTags
+        format: info.format || "pdf"
       })
 
       toast({ title: "Savoir publié !", description: "Votre document est maintenant accessible à la communauté." })
       
-      // Rafraîchissement propre de l'UI
       setTimeout(() => {
         window.location.reload()
       }, 1000)
@@ -67,7 +50,7 @@ export function UploadDocument() {
       toast({ 
         variant: "destructive", 
         title: "Erreur d'enregistrement", 
-        description: error.message || "Impossible de lier le document au catalogue." 
+        description: "Le système n'a pas pu indexer votre document. Vérifiez votre connexion." 
       })
     } finally {
       setIsProcessing(false)
@@ -94,7 +77,7 @@ export function UploadDocument() {
           className="rounded-full px-8 flex items-center gap-2 bg-primary hover:bg-primary/90 shadow-xl shadow-primary/20 h-14"
         >
           {isProcessing ? <Loader2 className="w-5 h-5 animate-spin" /> : <Plus className="w-5 h-5" />}
-          <span className="font-bold text-lg">{isProcessing ? "Traitement..." : "Publier"}</span>
+          <span className="font-bold text-lg">{isProcessing ? "Indexation..." : "Publier"}</span>
         </Button>
       )}
     </CldUploadWidget>
