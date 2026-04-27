@@ -48,12 +48,26 @@ const chatFlow = ai.defineFlow(
   },
   async (input) => {
     try {
-      const {output} = await prompt(input);
-      if (!output) throw new Error("Aucune réponse générée");
+      // Nettoyage et validation
+      if (!input.message || input.message.trim() === '') {
+        return { response: "Comment puis-je vous aider aujourd'hui ?" };
+      }
+
+      const {output} = await prompt({
+        message: input.message,
+        history: input.history || []
+      });
+      
+      if (!output || !output.response) {
+        throw new Error("Réponse vide du modèle");
+      }
+      
       return output;
     } catch (error) {
-      console.error("Genkit Chat Error:", error);
-      return { response: "Désolé, je rencontre une difficulté technique pour traiter votre demande. Veuillez réessayer." };
+      console.error("Genkit Chat Flow Error:", error);
+      return { 
+        response: "Je rencontre une petite difficulté pour traiter cette demande. Pouvez-vous reformuler ou essayer un autre sujet ?" 
+      };
     }
   }
 );

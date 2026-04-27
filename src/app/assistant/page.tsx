@@ -4,7 +4,7 @@ import React, { useState, useRef, useEffect } from 'react'
 import { Navbar } from '@/components/layout/Navbar'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Sparkles, Send, User, Bot, Loader2, Eraser, Plus } from 'lucide-react'
+import { Sparkles, Send, User, Bot, Loader2, Eraser, Plus, MessageSquare } from 'lucide-react'
 import { Card } from '@/components/ui/card'
 import { chatWithAssistant } from '@/ai/flows/chat-flow'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -92,7 +92,7 @@ export default function AssistantPage() {
               <h1 className="text-xl font-headline font-bold text-slate-900">Assistant Studio</h1>
               <div className="flex items-center gap-2">
                 <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Intelligence Active</p>
+                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest text-xs">Intelligence Active</p>
               </div>
             </div>
           </div>
@@ -100,7 +100,7 @@ export default function AssistantPage() {
             <Button 
               variant="outline" 
               size="sm" 
-              className="rounded-full border-slate-200 bg-white font-bold" 
+              className="rounded-full border-slate-200 bg-white font-bold h-10 px-4" 
               onClick={handleNew}
             >
               <Plus className="w-4 h-4 mr-2" /> Nouveau
@@ -109,7 +109,7 @@ export default function AssistantPage() {
               variant="ghost" 
               size="sm" 
               onClick={handleClear}
-              className="text-slate-400 hover:text-red-500 rounded-full font-bold"
+              className="text-slate-400 hover:text-red-500 rounded-full font-bold h-10 px-4"
             >
               <Eraser className="w-4 h-4 mr-2" /> Effacer
             </Button>
@@ -118,41 +118,49 @@ export default function AssistantPage() {
 
         <Card className="flex-1 bg-white rounded-[3rem] shadow-2xl border-none overflow-hidden flex flex-col relative mb-6">
           <ScrollArea className="flex-1 p-6 md:p-10" ref={scrollRef}>
-            <div className="space-y-8">
-              {messages.map((msg, i) => (
-                <div key={i} className={cn(
-                  "flex gap-4 max-w-[85%]",
-                  msg.role === 'user' ? "ml-auto flex-row-reverse" : "mr-auto"
-                )}>
-                  <div className={cn(
-                    "w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-sm",
-                    msg.role === 'user' ? "bg-white text-slate-400 border border-slate-100" : "bg-primary text-white"
+            {messages.length === 0 ? (
+              <div className="h-full flex flex-col items-center justify-center text-center p-10">
+                <MessageSquare className="w-16 h-16 text-slate-100 mb-6" />
+                <h2 className="text-2xl font-headline font-bold text-slate-800">Démarrer une discussion</h2>
+                <p className="text-slate-400 mt-2 max-w-sm">Posez une question sur vos documents ou sur n'importe quel sujet.</p>
+              </div>
+            ) : (
+              <div className="space-y-8 pb-10">
+                {messages.map((msg, i) => (
+                  <div key={i} className={cn(
+                    "flex gap-4 max-w-[90%] md:max-w-[85%]",
+                    msg.role === 'user' ? "ml-auto flex-row-reverse" : "mr-auto"
                   )}>
-                    {msg.role === 'user' ? <User className="w-5 h-5" /> : <Bot className="w-5 h-5" />}
+                    <div className={cn(
+                      "w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-sm",
+                      msg.role === 'user' ? "bg-white text-slate-400 border border-slate-100" : "bg-primary text-white"
+                    )}>
+                      {msg.role === 'user' ? <User className="w-5 h-5" /> : <Bot className="w-5 h-5" />}
+                    </div>
+                    <div className={cn(
+                      "p-5 rounded-[1.8rem] text-sm md:text-base leading-relaxed shadow-sm",
+                      msg.role === 'user' 
+                        ? "bg-slate-50 text-slate-800 rounded-tr-none border border-slate-100" 
+                        : "bg-primary/5 text-slate-900 rounded-tl-none border border-primary/10"
+                    )}>
+                      {msg.content}
+                    </div>
                   </div>
-                  <div className={cn(
-                    "p-5 rounded-[1.8rem] text-sm md:text-base leading-relaxed shadow-sm",
-                    msg.role === 'user' 
-                      ? "bg-slate-50 text-slate-800 rounded-tr-none border border-slate-100" 
-                      : "bg-primary/5 text-slate-900 rounded-tl-none border border-primary/10"
-                  )}>
-                    {msg.content}
+                ))}
+                {loading && (
+                  <div className="flex gap-4 mr-auto animate-in fade-in duration-300">
+                    <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center shadow-lg">
+                      <Loader2 className="w-5 h-5 text-white animate-spin" />
+                    </div>
+                    <div className="p-5 rounded-[1.8rem] rounded-tl-none bg-slate-50 border border-slate-100 flex items-center gap-2">
+                      <span className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce" />
+                      <span className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce [animation-delay:0.2s]" />
+                      <span className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce [animation-delay:0.4s]" />
+                    </div>
                   </div>
-                </div>
-              ))}
-              {loading && (
-                <div className="flex gap-4 mr-auto animate-in fade-in duration-300">
-                  <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center shadow-lg">
-                    <Loader2 className="w-5 h-5 text-white animate-spin" />
-                  </div>
-                  <div className="p-5 rounded-[1.8rem] rounded-tl-none bg-slate-50 border border-slate-100 flex items-center gap-2">
-                    <span className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce" />
-                    <span className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce [animation-delay:0.2s]" />
-                    <span className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce [animation-delay:0.4s]" />
-                  </div>
-                </div>
-              )}
-            </div>
+                )}
+              </div>
+            )}
           </ScrollArea>
 
           <div className="p-6 md:p-8 bg-slate-50/50 border-t border-slate-100">
@@ -161,17 +169,17 @@ export default function AssistantPage() {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-                placeholder="Poser une question..."
-                className="h-14 pl-6 pr-14 bg-white border-none shadow-xl rounded-full text-base focus-visible:ring-primary focus-visible:ring-offset-0 placeholder:text-slate-300"
+                placeholder="Posez votre question..."
+                className="h-16 pl-6 pr-16 bg-white border-none shadow-xl rounded-full text-lg focus-visible:ring-primary focus-visible:ring-offset-0 placeholder:text-slate-300"
                 disabled={loading}
               />
               <Button 
                 onClick={handleSend}
                 disabled={loading || !input.trim()}
                 size="icon" 
-                className="absolute right-1.5 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full shadow-lg shadow-primary/30 transition-transform active:scale-95"
+                className="absolute right-2 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full shadow-lg shadow-primary/30 transition-transform active:scale-95 bg-primary hover:bg-primary/90"
               >
-                <Send className="w-4 h-4" />
+                <Send className="w-5 h-5" />
               </Button>
             </div>
             <p className="text-[9px] text-center text-slate-300 mt-5 font-bold uppercase tracking-[0.2em]">

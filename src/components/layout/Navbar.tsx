@@ -1,9 +1,8 @@
-
 "use client"
 
 import React, { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 import { Search, User, Library, Settings, LogOut, Compass, Sparkles, UserPlus } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -19,12 +18,14 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { supabase, isSupabaseConfigured } from '@/lib/supabase'
 import { getOrCreateProfile, type Profile } from '@/lib/db'
 import { useToast } from '@/hooks/use-toast'
+import { cn } from '@/lib/utils'
 
 export function Navbar() {
   const [profile, setProfile] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
   const { toast } = useToast()
   const router = useRouter()
+  const pathname = usePathname()
 
   useEffect(() => {
     if (!isSupabaseConfigured) {
@@ -71,21 +72,39 @@ export function Navbar() {
   return (
     <nav className="sticky top-0 z-50 w-full border-b bg-white/80 backdrop-blur-md">
       <div className="container mx-auto px-4 h-16 flex items-center justify-between gap-6">
-        <Link href="/" className="flex items-center gap-2 group">
+        <Link href="/" className="flex items-center gap-2 group shrink-0">
           <div className="bg-primary p-2.5 rounded-2xl group-hover:rotate-12 transition-transform duration-300 shadow-lg shadow-primary/20">
             <Library className="w-5 h-5 text-white" />
           </div>
           <span className="font-headline font-bold text-2xl tracking-tight hidden sm:inline-block">Studio</span>
         </Link>
 
-        <div className="hidden lg:flex items-center gap-8 flex-1 justify-center">
-          <Link href="/explore" className="flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-primary transition-colors uppercase tracking-widest">
+        <div className="hidden lg:flex items-center gap-1 flex-1 justify-center">
+          <Link 
+            href="/explore" 
+            className={cn(
+              "flex items-center gap-2 px-6 py-2 text-xs font-bold transition-all uppercase tracking-widest rounded-full",
+              pathname === '/explore' ? "text-primary bg-primary/5" : "text-slate-500 hover:text-primary hover:bg-slate-50"
+            )}
+          >
             <Compass className="w-4 h-4" /> Explorer
           </Link>
-          <Link href="/assistant" className="flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-primary transition-colors uppercase tracking-widest">
+          <Link 
+            href="/assistant" 
+            className={cn(
+              "flex items-center gap-2 px-6 py-2 text-xs font-bold transition-all uppercase tracking-widest rounded-full",
+              pathname === '/assistant' ? "text-primary bg-primary/5" : "text-slate-500 hover:text-primary hover:bg-slate-50"
+            )}
+          >
             <Sparkles className="w-4 h-4" /> Assistant
           </Link>
-          <Link href="/library" className="flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-primary transition-colors uppercase tracking-widest">
+          <Link 
+            href="/library" 
+            className={cn(
+              "flex items-center gap-2 px-6 py-2 text-xs font-bold transition-all uppercase tracking-widest rounded-full",
+              pathname === '/library' ? "text-primary bg-primary/5" : "text-slate-500 hover:text-primary hover:bg-slate-50"
+            )}
+          >
             <Library className="w-4 h-4" /> Ma Bibliothèque
           </Link>
         </div>
@@ -105,31 +124,31 @@ export function Navbar() {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button className="relative h-11 w-11 rounded-full p-0 border-2 border-transparent hover:border-primary/20 transition-all outline-none">
-                  <Avatar className="h-10 w-10 shadow-sm">
+                  <Avatar className="h-10 w-10 shadow-sm ring-2 ring-white">
                     <AvatarImage src={profile.avatar_url} alt={profile.full_name} />
                     <AvatarFallback className="font-bold text-primary bg-primary/10">{profile.full_name?.[0] || 'U'}</AvatarFallback>
                   </Avatar>
                 </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-64 mt-2 rounded-[2rem] p-3 shadow-2xl border-slate-100" align="end">
+              <DropdownMenuContent className="w-64 mt-2 rounded-[2rem] p-3 shadow-2xl border-slate-100 bg-white" align="end">
                 <DropdownMenuLabel className="font-normal px-4 py-4">
                   <div className="flex flex-col space-y-1">
-                    <p className="text-base font-bold leading-none">{profile.full_name}</p>
+                    <p className="text-base font-bold leading-none text-slate-900">{profile.full_name}</p>
                     <p className="text-xs font-medium text-slate-400">@{profile.username}</p>
                   </div>
                 </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem asChild className="rounded-xl px-4 py-3 cursor-pointer">
+                <DropdownMenuSeparator className="bg-slate-50" />
+                <DropdownMenuItem asChild className="rounded-xl px-4 py-3 cursor-pointer focus:bg-slate-50">
                   <Link href="/profile" className="w-full flex items-center">
                     <User className="mr-3 h-4 w-4 text-slate-400" /> Profil
                   </Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem asChild className="rounded-xl px-4 py-3 cursor-pointer">
+                <DropdownMenuItem asChild className="rounded-xl px-4 py-3 cursor-pointer focus:bg-slate-50">
                   <Link href="/auth" className="w-full flex items-center text-primary font-bold">
                     <UserPlus className="mr-3 h-4 w-4" /> Changer de compte
                   </Link>
                 </DropdownMenuItem>
-                <DropdownMenuSeparator />
+                <DropdownMenuSeparator className="bg-slate-50" />
                 <DropdownMenuItem 
                   className="text-red-500 focus:bg-red-50 focus:text-red-600 rounded-xl px-4 py-3 cursor-pointer font-bold" 
                   onClick={handleSignOut}
