@@ -27,6 +27,7 @@ export interface DocumentData {
   likes: number;
   views: number;
   format: string;
+  tags?: string[];
 }
 
 export interface UserProfile {
@@ -36,6 +37,8 @@ export interface UserProfile {
   avatarUrl: string;
   bio: string;
   updatedAt: any;
+  followers?: number;
+  following?: number;
 }
 
 export const saveDocument = async (data: Omit<DocumentData, 'id' | 'createdAt' | 'likes' | 'views'>) => {
@@ -45,6 +48,20 @@ export const saveDocument = async (data: Omit<DocumentData, 'id' | 'createdAt' |
     likes: 0,
     views: 0
   });
+};
+
+export const getDocumentById = async (id: string) => {
+  try {
+    const docRef = doc(db, 'documents', id);
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+      return { id: docSnap.id, ...docSnap.data() } as DocumentData;
+    }
+    return null;
+  } catch (error) {
+    console.error("Erreur lors de la récupération du document:", error);
+    return null;
+  }
 };
 
 export const getLatestDocuments = async (count: number = 10) => {
@@ -83,6 +100,8 @@ export const getOrCreateProfile = async (uid: string, defaultData: Partial<UserP
       avatarUrl: defaultData.avatarUrl || `https://picsum.photos/seed/${uid}/200/200`,
       bio: defaultData.bio || 'Passionné de savoir.',
       updatedAt: serverTimestamp(),
+      followers: 0,
+      following: 0
     };
     await setDoc(docRef, newProfile);
     return newProfile;

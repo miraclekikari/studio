@@ -3,13 +3,15 @@
 import React from 'react'
 import { CldUploadWidget } from 'next-cloudinary'
 import { Button } from '@/components/ui/button'
-import { Plus, Sparkles } from 'lucide-react'
+import { Plus, Sparkles, Loader2 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { saveDocument } from '@/lib/db'
 import { auth } from '@/firebase/config'
+import { automatedDocumentTagging } from '@/ai/flows/automated-document-tagging'
 
 export function UploadDocument() {
   const { toast } = useToast()
+  const [isProcessing, setIsProcessing] = React.useState(false)
 
   return (
     <CldUploadWidget 
@@ -17,8 +19,21 @@ export function UploadDocument() {
       onSuccess={async (results) => {
         const info = results.info as any
         const user = auth.currentUser
+        setIsProcessing(true)
 
         try {
+          // Utilisation de l'IA pour suggérer des tags basés sur le nom du fichier
+          // (Idéalement on passerait le contenu, mais ici on simule avec le titre)
+          let aiTags: string[] = []
+          try {
+            const tagResult = await automatedDocumentTagging({ 
+              documentContent: `Document title: ${info.original_filename}. Description: Shared on LibreShare.` 
+            })
+            aiTags = tagResult.tags
+          } catch (e) {
+            console.error("AI tagging failed", e)
+          }
+
           await saveDocument({
             title: info.original_filename,
             description: "Document partagé via LibreShare",
@@ -28,15 +43,15 @@ export function UploadDocument() {
             userId: user?.uid || "anonymous",
             userName: user?.displayName || "Utilisateur",
             userAvatar: user?.photoURL || "",
-            format: info.format || "pdf"
+            format: info.format || "pdf",
+            tags: aiTags
           })
 
           toast({
             title: "Succès ! 🚀",
-            description: "Votre document est maintenant en ligne.",
+            description: "Votre document est en ligne et a été analysé par l'IA.",
           })
           
-          // Recharger pour voir le nouveau doc (ou gérer via un état global)
           window.location.reload()
         } catch (error) {
           toast({
@@ -44,6 +59,8 @@ export function UploadDocument() {
             title: "Erreur",
             description: "Impossible d'enregistrer les données du document.",
           })
+        } finally {
+          setIsProcessing(false)
         }
       }}
     >
@@ -51,11 +68,16 @@ export function UploadDocument() {
         <Button 
           onClick={() => open()}
           size="lg"
+          disabled={isProcessing}
           className="rounded-full px-8 flex items-center gap-2 bg-primary hover:bg-primary/90 shadow-xl transition-all hover:scale-105 group"
         >
-          <Plus className="w-5 h-5 transition-transform group-hover:rotate-90" />
-          <span className="font-bold">Partager un Savoir</span>
-          <Sparkles className="w-4 h-4 text-yellow-300 ml-1 animate-pulse" />
+          {isProcessing ? (
+            <Loader2 className="w-5 h-5 animate-spin" />
+          ) : (
+            <Plus className="w-5 h-5 transition-transform group-hover:rotate-90" />
+          )}
+          <span className="font-bold">{isProcessing ? "Traitement IA..." : "Partager un Savoir"}</span>
+          {!isProcessing && <Sparkles className="w-4 h-4 text-yellow-300 ml-1 animate-pulse" />}
         </Button>
       )}
     </CldUploadWidget>
