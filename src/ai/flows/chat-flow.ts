@@ -4,7 +4,7 @@
  * @fileOverview Système de discussion robuste pour l'Assistant Studio.
  */
 
-import {ai} from '@/ai/genkit';
+import {ai, MODEL_ID} from '@/ai/genkit';
 import {z} from 'genkit';
 
 const ChatInputSchema = z.object({
@@ -33,8 +33,8 @@ const chatFlow = ai.defineFlow(
   },
   async (input) => {
     try {
-      if (!input.message || input.message.trim() === '') {
-        return { response: "Le Système Studio attend votre message." };
+      if (!input.message?.trim()) {
+        return { response: "Le Système Studio est à votre écoute. Posez votre question." };
       }
 
       const messages = (input.history || []).map(h => ({
@@ -48,11 +48,11 @@ const chatFlow = ai.defineFlow(
       });
 
       const response = await ai.generate({
-        model: 'googleai/gemini-1.5-flash',
-        system: `Tu es l'Assistant Studio. Tu es un expert en gestion du savoir.
-        Ton but est d'aider l'utilisateur à organiser ses idées et ses documents.
-        Réponds de manière concise, élégante et professionnelle en français.
-        N'utilise pas de jargon technique sur l'IA, parle de "Système de Savoir".`,
+        model: MODEL_ID,
+        system: `Tu es l'Assistant Studio, un expert en gestion du savoir.
+        Ton but est d'analyser les idées et d'aider à organiser les ressources numériques.
+        Réponds de manière concise, professionnelle et inspirante en français.
+        Évite le jargon technique, parle d'Analyse et de Structuration du Savoir.`,
         messages: messages
       });
       
@@ -64,16 +64,16 @@ const chatFlow = ai.defineFlow(
       
       return { response: text };
     } catch (error: any) {
-      console.error("Assistant Flow Error:", error);
+      console.error("Assistant Chat Error:", error);
       
-      if (error.message?.includes('404') || error.message?.includes('not found') || error.message?.includes('API_KEY_INVALID')) {
+      if (error.message?.includes('404') || error.message?.includes('API_KEY_INVALID')) {
         return { 
-          response: "Le Système Studio nécessite une clé API valide (GOOGLE_GENAI_API_KEY) pour fonctionner. Veuillez vérifier votre configuration Vercel." 
+          response: "Le Système Studio nécessite une configuration API valide pour s'initialiser. Vérifiez vos paramètres d'environnement." 
         };
       }
       
       return { 
-        response: `Le Système Studio rencontre une perturbation temporaire. Réessayez dans un instant.` 
+        response: "Le module d'analyse rencontre une perturbation momentanée. Réessayez dans un instant." 
       };
     }
   }

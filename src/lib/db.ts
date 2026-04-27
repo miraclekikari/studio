@@ -28,28 +28,27 @@ export interface Document {
 }
 
 /**
- * Résout un email à partir d'un pseudo ou nom complet
+ * Résout un email à partir d'un pseudo pour permettre la connexion flexible.
  */
 export async function resolveEmailFromIdentifier(identifier: string): Promise<string | null> {
   if (!isSupabaseConfigured || !identifier) return null;
   if (identifier.includes('@')) return identifier;
 
   try {
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from('profiles')
       .select('email')
-      .or(`username.eq."${identifier}",full_name.eq."${identifier}"`)
+      .eq('username', identifier.toLowerCase())
       .maybeSingle();
 
-    if (error || !data) return null;
-    return data.email;
+    return data?.email || null;
   } catch (e) {
     return null;
   }
 }
 
 /**
- * Récupère ou crée un profil
+ * Récupère ou initialise un profil utilisateur.
  */
 export async function getOrCreateProfile(uid: string, defaultData: Partial<Profile>): Promise<Profile | null> {
   if (!isSupabaseConfigured) return null;
@@ -66,10 +65,10 @@ export async function getOrCreateProfile(uid: string, defaultData: Partial<Profi
     const newProfile = {
       id: uid,
       username: defaultData.username || `user_${uid.substring(0, 5)}`,
-      full_name: defaultData.full_name || 'Membre',
+      full_name: defaultData.full_name || 'Membre Studio',
       avatar_url: defaultData.avatar_url || `https://picsum.photos/seed/${uid}/200/200`,
-      bio: 'Membre de la communauté Studio.',
-      interests: defaultData.interests || ["Technologie", "Savoir"],
+      bio: 'Membre actif de la communauté de savoir.',
+      interests: defaultData.interests || ["Savoir", "Analyse"],
       email: defaultData.email
     };
 
@@ -77,13 +76,13 @@ export async function getOrCreateProfile(uid: string, defaultData: Partial<Profi
     if (error) throw error;
     return data;
   } catch (err) {
-    console.error("Profil Error:", err);
+    console.error("Profile creation error:", err);
     return null;
   }
 }
 
 /**
- * Sauvegarde un document avec les noms de colonnes exacts (snake_case)
+ * Sauvegarde un document avec les colonnes exactes snake_case.
  */
 export async function saveDocument(doc: Omit<Document, 'id' | 'created_at' | 'likes' | 'views'>) {
   if (!isSupabaseConfigured) throw new Error("Base de données non configurée");
@@ -104,7 +103,7 @@ export async function saveDocument(doc: Omit<Document, 'id' | 'created_at' | 'li
 }
 
 /**
- * Récupère les documents avec filtres et jointure profiles
+ * Récupère les derniers documents avec filtrage par catégorie.
  */
 export async function getLatestDocuments(limitCount: number = 20, category?: string): Promise<Document[]> {
   if (!isSupabaseConfigured) return [];
@@ -115,7 +114,7 @@ export async function getLatestDocuments(limitCount: number = 20, category?: str
       .order('created_at', { ascending: false })
       .limit(limitCount);
       
-    if (category && category !== 'Tous' && category !== 'Tendances') {
+    if (category && category !== 'Tous') {
       query = query.eq('category', category);
     }
     const { data, error } = await query;
@@ -128,7 +127,7 @@ export async function getLatestDocuments(limitCount: number = 20, category?: str
 }
 
 /**
- * Statistiques utilisateur basées sur user_id
+ * Récupère les statistiques réelles d'un profil.
  */
 export async function getUserStats(userId: string) {
   if (!isSupabaseConfigured) return { likes: 0, posts: 0 };
@@ -148,7 +147,7 @@ export async function getDocumentById(id: string): Promise<Document | null> {
 }
 
 /**
- * Incrémentation via RPC uniquement
+ * Incrémentation sécurisée via RPC.
  */
 export async function incrementDocumentViews(id: string) {
   if (!isSupabaseConfigured) return;
@@ -156,7 +155,7 @@ export async function incrementDocumentViews(id: string) {
 }
 
 /**
- * Like via RPC uniquement
+ * Like sécurisé via RPC.
  */
 export async function toggleLikeDocument(docId: string, userId: string) {
   if (!isSupabaseConfigured) return;
@@ -164,7 +163,7 @@ export async function toggleLikeDocument(docId: string, userId: string) {
 }
 
 /**
- * Récupère les documents d'un utilisateur
+ * Récupère les documents personnels.
  */
 export async function getUserDocuments(userId: string): Promise<Document[]> {
   if (!isSupabaseConfigured) return [];

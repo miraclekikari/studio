@@ -28,7 +28,7 @@ export function UploadDocument() {
     setIsProcessing(true)
 
     try {
-      // Extraction sécurisée des URLs Cloudinary
+      // Mapping Cloudinary vers schéma Supabase snake_case
       const file_url = info.secure_url;
       const thumbnail_url = info.thumbnail_url || `https://placehold.co/400x600?text=${info.original_filename}`;
 
@@ -44,7 +44,7 @@ export function UploadDocument() {
 
       await saveDocument({
         title: info.original_filename || "Document sans titre",
-        description: "Partagé via Cloudinary.",
+        description: "Partagé via Studio Cloudinary.",
         file_url: file_url,
         thumbnail_url: thumbnail_url,
         category: "Savoirs",
@@ -66,24 +66,25 @@ export function UploadDocument() {
 
   return (
     <CldUploadWidget 
-      uploadPreset="ml_default"
+      uploadPreset="studio_unsigned"
       options={{
         cloudName: "dslxm58ng",
         maxFiles: 1,
         clientAllowedFormats: ["pdf", "png", "jpg", "jpeg", "docx"],
         resourceType: "auto",
+        folder: "samples/ecommerce"
       }}
       onSuccess={handleUploadSuccess}
     >
       {({ open }) => (
         <Button 
-          onClick={() => isSupabaseConfigured ? open() : toast({ title: "Indisponible", description: "Service de stockage non configuré.", variant: "destructive" })}
+          onClick={() => isSupabaseConfigured ? open() : toast({ title: "Configuration manquante", description: "Vérifiez vos clés Supabase et Cloudinary.", variant: "destructive" })}
           size="lg"
           disabled={isProcessing}
-          className="rounded-full px-8 flex items-center gap-2 bg-primary hover:bg-primary/90 shadow-xl"
+          className="rounded-full px-8 flex items-center gap-2 bg-primary hover:bg-primary/90 shadow-xl shadow-primary/20 h-14"
         >
           {isProcessing ? <Loader2 className="w-5 h-5 animate-spin" /> : <Plus className="w-5 h-5" />}
-          <span className="font-bold">{isProcessing ? "Traitement..." : "Publier"}</span>
+          <span className="font-bold text-lg">{isProcessing ? "Traitement..." : "Publier"}</span>
         </Button>
       )}
     </CldUploadWidget>

@@ -4,7 +4,7 @@ import {googleAI} from '@genkit-ai/google-genai';
 
 /**
  * Configuration Genkit ultra-stable.
- * Utilise le plugin Google AI pour accéder aux modèles Gemini.
+ * Utilise l'identifiant de modèle string literal pour une compatibilité maximale.
  */
 export const ai = genkit({
   plugins: [
@@ -13,3 +13,5 @@ export const ai = genkit({
     })
   ],
 });
+
+export const MODEL_ID = 'googleai/gemini-1.5-flash';
