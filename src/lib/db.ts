@@ -28,7 +28,7 @@ export interface Document {
 }
 
 /**
- * Résout un email à partir d'un pseudo pour permettre la connexion flexible.
+ * Résout un email à partir d'un pseudo.
  */
 export async function resolveEmailFromIdentifier(identifier: string): Promise<string | null> {
   if (!isSupabaseConfigured || !identifier) return null;
@@ -82,7 +82,7 @@ export async function getOrCreateProfile(uid: string, defaultData: Partial<Profi
 }
 
 /**
- * Sauvegarde un document avec les colonnes exactes snake_case.
+ * Sauvegarde un document.
  */
 export async function saveDocument(doc: Omit<Document, 'id' | 'created_at' | 'likes' | 'views'>) {
   if (!isSupabaseConfigured) throw new Error("Base de données non configurée");
@@ -103,14 +103,14 @@ export async function saveDocument(doc: Omit<Document, 'id' | 'created_at' | 'li
 }
 
 /**
- * Récupère les derniers documents avec filtrage par catégorie.
+ * Récupère les derniers documents.
  */
 export async function getLatestDocuments(limitCount: number = 20, category?: string): Promise<Document[]> {
   if (!isSupabaseConfigured) return [];
   try {
     let query = supabase
       .from('documents')
-      .select('*, profiles!user_id(*)')
+      .select('*, profiles:user_id(*)') // Simplification de la jointure pour éviter l'erreur 400
       .order('created_at', { ascending: false })
       .limit(limitCount);
       
@@ -127,7 +127,7 @@ export async function getLatestDocuments(limitCount: number = 20, category?: str
 }
 
 /**
- * Récupère les statistiques réelles d'un profil.
+ * Statistiques utilisateur.
  */
 export async function getUserStats(userId: string) {
   if (!isSupabaseConfigured) return { likes: 0, posts: 0 };
@@ -142,12 +142,12 @@ export async function getUserStats(userId: string) {
 
 export async function getDocumentById(id: string): Promise<Document | null> {
   if (!isSupabaseConfigured || !id) return null;
-  const { data, error } = await supabase.from('documents').select('*, profiles!user_id(*)').eq('id', id).maybeSingle();
+  const { data, error } = await supabase.from('documents').select('*, profiles:user_id(*)').eq('id', id).maybeSingle();
   return error ? null : (data as any);
 }
 
 /**
- * Incrémentation sécurisée via RPC.
+ * Incrémentation sécurisée RPC.
  */
 export async function incrementDocumentViews(id: string) {
   if (!isSupabaseConfigured) return;
@@ -155,7 +155,7 @@ export async function incrementDocumentViews(id: string) {
 }
 
 /**
- * Like sécurisé via RPC.
+ * Like sécurisé RPC.
  */
 export async function toggleLikeDocument(docId: string, userId: string) {
   if (!isSupabaseConfigured) return;
@@ -163,7 +163,7 @@ export async function toggleLikeDocument(docId: string, userId: string) {
 }
 
 /**
- * Récupère les documents personnels.
+ * Documents personnels.
  */
 export async function getUserDocuments(userId: string): Promise<Document[]> {
   if (!isSupabaseConfigured) return [];

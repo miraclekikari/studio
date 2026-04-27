@@ -4,7 +4,6 @@ import {googleAI} from '@genkit-ai/google-genai';
 
 /**
  * Configuration Genkit ultra-stable.
- * Utilise l'identifiant de modèle string literal pour une compatibilité maximale.
  */
 export const ai = genkit({
   plugins: [

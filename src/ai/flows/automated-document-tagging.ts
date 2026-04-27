@@ -4,7 +4,7 @@
  * @fileOverview An AI agent for automatically suggesting tags for uploaded documents.
  */
 
-import {ai} from '@/ai/genkit';
+import {ai, MODEL_ID} from '@/ai/genkit';
 import {z} from 'genkit';
 
 const AutomatedDocumentTaggingInputSchema = z.object({
@@ -31,10 +31,10 @@ export async function automatedDocumentTagging(
 
 const prompt = ai.definePrompt({
   name: 'automatedDocumentTaggingPrompt',
-  model: 'googleai/gemini-1.5-flash',
+  model: MODEL_ID,
   input: {schema: AutomatedDocumentTaggingInputSchema},
   output: {schema: AutomatedDocumentTaggingOutputSchema},
-  prompt: `You are an expert document categorizer. Based on the provided document content, suggest a list of relevant tags or keywords that describe its main topics and themes. Provide at least 3 and at most 10 tags. Do not include any other text or explanation, just the JSON array of tags.
+  prompt: `You are an expert document categorizer. Based on the provided document content, suggest a list of relevant tags or keywords. Provide at least 3 and at most 10 tags.
 
 Document content: {{{documentContent}}}`,
 });

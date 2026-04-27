@@ -28,23 +28,25 @@ export function UploadDocument() {
     setIsProcessing(true)
 
     try {
-      // Mapping Cloudinary vers schéma Supabase snake_case
       const file_url = info.secure_url;
-      const thumbnail_url = info.thumbnail_url || `https://placehold.co/400x600?text=${info.original_filename}`;
+      const thumbnail_url = info.thumbnail_url || `https://placehold.co/400x600?text=${encodeURIComponent(info.original_filename || 'Doc')}`;
 
-      let aiTags: string[] = []
+      // Tâchage IA (optionnel et sécurisé)
+      let aiTags: string[] = ["Général", info.format || "fichier"]
       try {
         const tagResult = await automatedDocumentTagging({ 
           documentContent: `Titre: ${info.original_filename}. Format: ${info.format}.` 
         })
-        aiTags = tagResult.tags
+        if (tagResult && tagResult.tags) {
+          aiTags = tagResult.tags
+        }
       } catch (e) {
-        aiTags = ["Général", info.format || "fichier"]
+        console.warn("AI Tagging skipped:", e)
       }
 
       await saveDocument({
         title: info.original_filename || "Document sans titre",
-        description: "Partagé via Studio Cloudinary.",
+        description: "Partagé via Studio.",
         file_url: file_url,
         thumbnail_url: thumbnail_url,
         category: "Savoirs",
@@ -54,11 +56,19 @@ export function UploadDocument() {
       })
 
       toast({ title: "Savoir publié !", description: "Votre document est maintenant accessible à la communauté." })
-      router.refresh()
-      window.location.reload()
-    } catch (error) {
-      console.error("Upload error:", error)
-      toast({ variant: "destructive", title: "Erreur d'enregistrement", description: "Impossible de lier le document au catalogue." })
+      
+      // Rafraîchissement propre de l'UI
+      setTimeout(() => {
+        window.location.reload()
+      }, 1000)
+      
+    } catch (error: any) {
+      console.error("Upload save error:", error)
+      toast({ 
+        variant: "destructive", 
+        title: "Erreur d'enregistrement", 
+        description: error.message || "Impossible de lier le document au catalogue." 
+      })
     } finally {
       setIsProcessing(false)
     }
