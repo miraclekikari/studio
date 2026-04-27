@@ -48,6 +48,9 @@ export interface UserProfile {
   interests?: string[];
 }
 
+/**
+ * Enregistre un nouveau document dans Firestore.
+ */
 export const saveDocument = async (data: Omit<DocumentData, 'id' | 'createdAt' | 'likes' | 'views'>) => {
   return await addDoc(collection(db, 'documents'), {
     ...data,
@@ -58,6 +61,9 @@ export const saveDocument = async (data: Omit<DocumentData, 'id' | 'createdAt' |
   });
 };
 
+/**
+ * Récupère un document spécifique par son ID.
+ */
 export const getDocumentById = async (id: string) => {
   try {
     const docRef = doc(db, 'documents', id);
@@ -72,6 +78,9 @@ export const getDocumentById = async (id: string) => {
   }
 };
 
+/**
+ * Incrémente le compteur de vues d'un document.
+ */
 export const incrementDocumentViews = async (id: string) => {
   const docRef = doc(db, 'documents', id);
   await updateDoc(docRef, {
@@ -79,6 +88,9 @@ export const incrementDocumentViews = async (id: string) => {
   });
 };
 
+/**
+ * Ajoute ou retire un Like sur un document pour un utilisateur donné.
+ */
 export const toggleLikeDocument = async (docId: string, userId: string) => {
   const docRef = doc(db, 'documents', docId);
   const docSnap = await getDoc(docRef);
@@ -102,6 +114,9 @@ export const toggleLikeDocument = async (docId: string, userId: string) => {
   }
 };
 
+/**
+ * Récupère les derniers documents publics.
+ */
 export const getLatestDocuments = async (count: number = 20) => {
   try {
     const q = query(collection(db, 'documents'), orderBy('createdAt', 'desc'), limit(count));
@@ -113,6 +128,9 @@ export const getLatestDocuments = async (count: number = 20) => {
   }
 };
 
+/**
+ * Récupère tous les documents d'un utilisateur spécifique.
+ */
 export const getUserDocuments = async (userId: string) => {
   try {
     const q = query(collection(db, 'documents'), where('userId', '==', userId), orderBy('createdAt', 'desc'));
@@ -124,6 +142,9 @@ export const getUserDocuments = async (userId: string) => {
   }
 };
 
+/**
+ * Récupère le profil d'un utilisateur ou le crée s'il n'existe pas.
+ */
 export const getOrCreateProfile = async (uid: string, defaultData: Partial<UserProfile>) => {
   const docRef = doc(db, 'profiles', uid);
   const docSnap = await getDoc(docRef);
@@ -147,6 +168,9 @@ export const getOrCreateProfile = async (uid: string, defaultData: Partial<UserP
   }
 };
 
+/**
+ * Met à jour le profil d'un utilisateur.
+ */
 export const updateProfile = async (uid: string, data: Partial<UserProfile>) => {
   const docRef = doc(db, 'profiles', uid);
   return await setDoc(docRef, { ...data, updatedAt: serverTimestamp() }, { merge: true });
