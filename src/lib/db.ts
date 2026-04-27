@@ -27,7 +27,7 @@ export interface Document {
 }
 
 /**
- * Récupère ou crée un profil utilisateur Supabase
+ * Récupère ou crée un profil utilisateur
  */
 export async function getOrCreateProfile(uid: string, defaultData: Partial<Profile>): Promise<Profile | null> {
   if (!isSupabaseConfigured) return null;
@@ -46,8 +46,8 @@ export async function getOrCreateProfile(uid: string, defaultData: Partial<Profi
       username: defaultData.username || `user_${uid.substring(0, 5)}`,
       full_name: defaultData.full_name || 'Utilisateur',
       avatar_url: defaultData.avatar_url || `https://picsum.photos/seed/${uid}/200/200`,
-      bio: 'Membre de la communauté LibreShare.',
-      interests: ["Technologie", "Éducation"]
+      bio: 'Membre de la communauté Studio.',
+      interests: defaultData.interests || ["Technologie", "Savoir"]
     };
 
     const { data, error: insertError } = await supabase
@@ -59,33 +59,38 @@ export async function getOrCreateProfile(uid: string, defaultData: Partial<Profi
     if (insertError) throw insertError;
     return data;
   } catch (err) {
-    console.error("Erreur Profil Supabase:", err);
+    console.error("Erreur Profil:", err);
     return null;
   }
 }
 
 /**
- * Enregistre un document dans Supabase
+ * Enregistre un document
  */
 export async function saveDocument(doc: Omit<Document, 'id' | 'created_at' | 'likes' | 'views'>) {
-  if (!isSupabaseConfigured) throw new Error("Supabase non configuré");
+  if (!isSupabaseConfigured) throw new Error("Base de données non configurée");
 
-  const { data, error } = await supabase
-    .from('documents')
-    .insert([{ 
-      ...doc, 
-      likes: 0, 
-      views: 0 
-    }])
-    .select()
-    .single();
+  try {
+    const { data, error } = await supabase
+      .from('documents')
+      .insert([{ 
+        ...doc, 
+        likes: 0, 
+        views: 0 
+      }])
+      .select()
+      .single();
 
-  if (error) throw error;
-  return data;
+    if (error) throw error;
+    return data;
+  } catch (err) {
+    console.error("Save doc error:", err);
+    throw err;
+  }
 }
 
 /**
- * Récupère les derniers documents avec jointure sur profiles
+ * Récupère les derniers documents
  */
 export async function getLatestDocuments(limitCount: number = 20): Promise<Document[]> {
   if (!isSupabaseConfigured) return [];
@@ -97,15 +102,10 @@ export async function getLatestDocuments(limitCount: number = 20): Promise<Docum
       .order('created_at', { ascending: false })
       .limit(limitCount);
 
-    if (error) {
-      console.error("Erreur fetch docs Supabase:", error);
-      return [];
-    }
+    if (error) throw error;
     return (data as any[]) || [];
   } catch (err) {
-    // Évite de polluer la console avec TypeError: Failed to fetch si l'URL est placeholder
-    if (err instanceof TypeError && err.message === 'Failed to fetch') return [];
-    console.error("Erreur réseau fetch docs:", err);
+    console.error("Fetch docs error:", err);
     return [];
   }
 }
@@ -114,44 +114,51 @@ export async function getLatestDocuments(limitCount: number = 20): Promise<Docum
  * Récupère un document par son ID
  */
 export async function getDocumentById(id: string): Promise<Document | null> {
-  if (!isSupabaseConfigured) return null;
+  if (!isSupabaseConfigured || !id) return null;
 
-  const { data, error } = await supabase
-    .from('documents')
-    .select('*, profiles!user_id(*)')
-    .eq('id', id)
-    .maybeSingle();
+  try {
+    const { data, error } = await supabase
+      .from('documents')
+      .select('*, profiles!user_id(*)')
+      .eq('id', id)
+      .maybeSingle();
 
-  if (error) return null;
-  return data as any;
+    if (error) throw error;
+    return data as any;
+  } catch (err) {
+    console.error("Get doc by ID error:", err);
+    return null;
+  }
 }
 
 /**
  * Incrémente le compteur de vues
  */
 export async function incrementDocumentViews(id: string) {
-  if (!isSupabaseConfigured) return;
+  if (!isSupabaseConfigured || !id) return;
   try {
-    const { data } = await supabase.from('documents').select('views').eq('id', id).single();
+    const { data, error: fetchError } = await supabase.from('documents').select('views').eq('id', id).maybeSingle();
     if (data) {
       await supabase.from('documents').update({ views: (data.views || 0) + 1 }).eq('id', id);
     }
-  } catch (e) {}
+  } catch (e) {
+    console.error("View increment error:", e);
+  }
 }
 
 /**
  * Gère les likes
  */
 export async function toggleLikeDocument(docId: string, userId: string) {
-  if (!isSupabaseConfigured) return;
+  if (!isSupabaseConfigured || !docId) return;
   try {
-    const { data } = await supabase.from('documents').select('likes').eq('id', docId).single();
+    const { data } = await supabase.from('documents').select('likes').eq('id', docId).maybeSingle();
     if (data) {
       const { error } = await supabase.from('documents').update({ likes: (data.likes || 0) + 1 }).eq('id', docId);
       if (error) throw error;
     }
   } catch (e) {
-    console.error("Erreur Like:", e);
+    console.error("Like error:", e);
   }
 }
 
@@ -159,14 +166,19 @@ export async function toggleLikeDocument(docId: string, userId: string) {
  * Récupère les documents d'un utilisateur spécifique
  */
 export async function getUserDocuments(userId: string): Promise<Document[]> {
-  if (!isSupabaseConfigured) return [];
+  if (!isSupabaseConfigured || !userId) return [];
   
-  const { data, error } = await supabase
-    .from('documents')
-    .select('*')
-    .eq('user_id', userId)
-    .order('created_at', { ascending: false });
+  try {
+    const { data, error } = await supabase
+      .from('documents')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
 
-  if (error) return [];
-  return (data as any[]) || [];
+    if (error) throw error;
+    return (data as any[]) || [];
+  } catch (err) {
+    console.error("User docs fetch error:", err);
+    return [];
+  }
 }

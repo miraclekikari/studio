@@ -16,7 +16,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { supabase } from '@/lib/supabase'
+import { supabase, isSupabaseConfigured } from '@/lib/supabase'
 import { getOrCreateProfile, type Profile } from '@/lib/db'
 import { useToast } from '@/hooks/use-toast'
 
@@ -27,15 +27,25 @@ export function Navbar() {
   const router = useRouter()
 
   useEffect(() => {
-    const init = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (session?.user) {
-        const p = await getOrCreateProfile(session.user.id, {
-          full_name: session.user.user_metadata?.full_name || 'Membre',
-        })
-        setProfile(p)
-      }
+    if (!isSupabaseConfigured) {
       setLoading(false)
+      return
+    }
+
+    const init = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        if (session?.user) {
+          const p = await getOrCreateProfile(session.user.id, {
+            full_name: session.user.user_metadata?.full_name || 'Membre',
+          })
+          setProfile(p)
+        }
+      } catch (e) {
+        console.error("Navbar session init error:", e)
+      } finally {
+        setLoading(false)
+      }
     }
     init()
 
@@ -52,6 +62,11 @@ export function Navbar() {
 
     return () => subscription.unsubscribe()
   }, [])
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut()
+    window.location.href = '/'
+  }
 
   return (
     <nav className="sticky top-0 z-50 w-full border-b bg-white/80 backdrop-blur-md">
@@ -89,12 +104,12 @@ export function Navbar() {
           ) : profile ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-11 w-11 rounded-full p-0 border-2 border-transparent hover:border-primary/20 transition-all">
+                <button className="relative h-11 w-11 rounded-full p-0 border-2 border-transparent hover:border-primary/20 transition-all outline-none">
                   <Avatar className="h-10 w-10 shadow-sm">
                     <AvatarImage src={profile.avatar_url} alt={profile.full_name} />
                     <AvatarFallback className="font-bold text-primary bg-primary/10">{profile.full_name?.[0] || 'U'}</AvatarFallback>
                   </Avatar>
-                </Button>
+                </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent className="w-64 mt-2 rounded-[2rem] p-3 shadow-2xl border-slate-100" align="end">
                 <DropdownMenuLabel className="font-normal px-4 py-4">
@@ -117,7 +132,7 @@ export function Navbar() {
                 <DropdownMenuSeparator />
                 <DropdownMenuItem 
                   className="text-red-500 focus:bg-red-50 focus:text-red-600 rounded-xl px-4 py-3 cursor-pointer font-bold" 
-                  onClick={() => supabase.auth.signOut().then(() => router.push('/'))}
+                  onClick={handleSignOut}
                 >
                   <LogOut className="mr-3 h-4 w-4" /> Déconnexion
                 </DropdownMenuItem>

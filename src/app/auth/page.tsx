@@ -9,11 +9,12 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { supabase } from '@/lib/supabase'
+import { supabase, isSupabaseConfigured } from '@/lib/supabase'
 import { useToast } from '@/hooks/use-toast'
-import { Loader2, Library, UserCircle2, Plus, X, ChevronRight } from 'lucide-react'
+import { Loader2, Library, UserCircle2, Plus, X, ChevronRight, AlertCircle } from 'lucide-react'
 import { getOrCreateProfile } from '@/lib/db'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 
 interface StoredAccount {
   uid: string;
@@ -26,8 +27,7 @@ interface StoredAccount {
 export default function AuthPage() {
   const [loading, setLoading] = useState(false)
   const [savedAccounts, setSavedAccounts] = useState<StoredAccount[]>([])
-  const [showAccountSwitcher, setShowAccountSwitcher] = useState(true)
-  const router = useRouter()
+  const [showAccountSwitcher, setShowAccountSwitcher] = useState(false) // Par défaut false pour éviter hydration mismatch
   const { toast } = useToast()
 
   const [email, setEmail] = useState('')
@@ -37,23 +37,23 @@ export default function AuthPage() {
   useEffect(() => {
     const accounts = localStorage.getItem('studio_saved_accounts')
     if (accounts) {
-      setSavedAccounts(JSON.parse(accounts))
+      const parsed = JSON.parse(accounts)
+      setSavedAccounts(parsed)
+      if (parsed.length > 0) setShowAccountSwitcher(true)
     }
   }, [])
 
   const saveAccountToLocal = (account: StoredAccount) => {
-    const existing = localStorage.getItem('studio_saved_accounts')
-    let accounts: StoredAccount[] = existing ? JSON.parse(existing) : []
-    
-    // Éviter les doublons
-    accounts = accounts.filter(a => a.uid !== account.uid)
-    accounts.unshift(account)
-    
-    // Garder max 5 comptes
-    accounts = accounts.slice(0, 5)
-    
-    localStorage.setItem('studio_saved_accounts', JSON.stringify(accounts))
-    setSavedAccounts(accounts)
+    try {
+      const existing = localStorage.getItem('studio_saved_accounts')
+      let accounts: StoredAccount[] = existing ? JSON.parse(existing) : []
+      accounts = accounts.filter(a => a.uid !== account.uid)
+      accounts.unshift(account)
+      accounts = accounts.slice(0, 5)
+      localStorage.setItem('studio_saved_accounts', JSON.stringify(accounts))
+    } catch (e) {
+      console.error("Local storage error:", e)
+    }
   }
 
   const removeAccount = (e: React.MouseEvent, uid: string) => {
@@ -61,10 +61,13 @@ export default function AuthPage() {
     const updated = savedAccounts.filter(a => a.uid !== uid)
     localStorage.setItem('studio_saved_accounts', JSON.stringify(updated))
     setSavedAccounts(updated)
+    if (updated.length === 0) setShowAccountSwitcher(false)
   }
 
   const handleLogin = async (e?: React.FormEvent, overrideEmail?: string) => {
     if (e) e.preventDefault()
+    if (!isSupabaseConfigured) return
+
     setLoading(true)
     try {
       const loginEmail = overrideEmail || email
@@ -86,18 +89,19 @@ export default function AuthPage() {
         }
       }
 
-      toast({ title: "Content de vous revoir !" })
-      router.push('/')
-      router.refresh()
+      toast({ title: "Connexion réussie !" })
+      // Utilisation de window.location pour forcer un rechargement propre et éviter les exceptions client-side de navigation
+      window.location.href = '/'
     } catch (error: any) {
       toast({ variant: "destructive", title: "Erreur", description: error.message })
-    } finally {
       setLoading(false)
     }
   }
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!isSupabaseConfigured) return
+
     setLoading(true)
     try {
       const { data, error } = await supabase.auth.signUp({ 
@@ -126,12 +130,10 @@ export default function AuthPage() {
         }
       }
       
-      toast({ title: "Compte créé !", description: "Vous êtes maintenant connecté." })
-      router.push('/')
-      router.refresh()
+      toast({ title: "Compte créé !" })
+      window.location.href = '/'
     } catch (error: any) {
       toast({ variant: "destructive", title: "Erreur", description: error.message })
-    } finally {
       setLoading(false)
     }
   }
@@ -141,6 +143,16 @@ export default function AuthPage() {
       <Navbar />
       <main className="flex-1 flex items-center justify-center p-4 py-12">
         <div className="w-full max-w-md space-y-8">
+          {!isSupabaseConfigured && (
+            <Alert variant="destructive" className="rounded-2xl">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Configuration requise</AlertTitle>
+              <AlertDescription>
+                Veuillez ajouter vos clés Supabase dans les variables d'environnement pour activer la connexion.
+              </AlertDescription>
+            </Alert>
+          )}
+
           <div className="text-center space-y-2">
             <div className="inline-flex p-3 bg-primary rounded-2xl shadow-xl mb-4">
               <Library className="w-8 h-8 text-white" />
@@ -150,7 +162,7 @@ export default function AuthPage() {
           </div>
 
           {showAccountSwitcher && savedAccounts.length > 0 ? (
-            <div className="space-y-4">
+            <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
               <div className="bg-white rounded-[2rem] shadow-2xl overflow-hidden border border-slate-100">
                 <div className="p-6 border-b bg-slate-50/50">
                   <h2 className="font-headline font-bold text-lg">Comptes enregistrés</h2>
@@ -201,7 +213,7 @@ export default function AuthPage() {
               </div>
             </div>
           ) : (
-            <Tabs defaultValue="login" className="w-full">
+            <Tabs defaultValue="login" className="w-full animate-in fade-in duration-500">
               <TabsList className="grid w-full grid-cols-2 rounded-xl h-12 mb-8 bg-slate-100 p-1">
                 <TabsTrigger value="login" className="rounded-lg font-bold">Connexion</TabsTrigger>
                 <TabsTrigger value="register" className="rounded-lg font-bold">Inscription</TabsTrigger>
@@ -223,6 +235,7 @@ export default function AuthPage() {
                           onChange={(e) => setEmail(e.target.value)} 
                           placeholder="votre@email.com"
                           className="rounded-xl h-12"
+                          disabled={loading || !isSupabaseConfigured}
                           required 
                         />
                       </div>
@@ -234,12 +247,13 @@ export default function AuthPage() {
                           value={password} 
                           onChange={(e) => setPassword(e.target.value)} 
                           className="rounded-xl h-12"
+                          disabled={loading || !isSupabaseConfigured}
                           required 
                         />
                       </div>
                     </CardContent>
                     <CardFooter className="flex flex-col gap-4">
-                      <Button className="w-full rounded-full h-14 font-bold text-lg" disabled={loading} type="submit">
+                      <Button className="w-full rounded-full h-14 font-bold text-lg" disabled={loading || !isSupabaseConfigured} type="submit">
                         {loading && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
                         Se connecter
                       </Button>
@@ -273,6 +287,7 @@ export default function AuthPage() {
                           onChange={(e) => setFullName(e.target.value)} 
                           placeholder="Jean Dupont"
                           className="rounded-xl h-12"
+                          disabled={loading || !isSupabaseConfigured}
                           required 
                         />
                       </div>
@@ -285,6 +300,7 @@ export default function AuthPage() {
                           onChange={(e) => setEmail(e.target.value)} 
                           placeholder="votre@email.com"
                           className="rounded-xl h-12"
+                          disabled={loading || !isSupabaseConfigured}
                           required 
                         />
                       </div>
@@ -296,12 +312,13 @@ export default function AuthPage() {
                           value={password} 
                           onChange={(e) => setPassword(e.target.value)} 
                           className="rounded-xl h-12"
+                          disabled={loading || !isSupabaseConfigured}
                           required 
                         />
                       </div>
                     </CardContent>
                     <CardFooter className="flex flex-col gap-4">
-                      <Button className="w-full rounded-full h-14 font-bold text-lg shadow-xl shadow-primary/20" disabled={loading} type="submit">
+                      <Button className="w-full rounded-full h-14 font-bold text-lg shadow-xl shadow-primary/20" disabled={loading || !isSupabaseConfigured} type="submit">
                         {loading && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
                         S'inscrire et commencer
                       </Button>
