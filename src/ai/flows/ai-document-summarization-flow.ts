@@ -1,10 +1,6 @@
 'use server';
 /**
  * @fileOverview A Genkit flow for generating AI-powered summaries of documents.
- *
- * - summarizeDocument - A function that handles the document summarization process.
- * - SummarizeDocumentInput - The input type for the summarizeDocument function.
- * - SummarizeDocumentOutput - The return type for the summarizeDocument function.
  */
 
 import {ai} from '@/ai/genkit';
@@ -28,11 +24,11 @@ const prompt = ai.definePrompt({
   name: 'summarizeDocumentPrompt',
   input: {schema: SummarizeDocumentInputSchema},
   output: {schema: SummarizeDocumentOutputSchema},
-  prompt: `Please provide a concise summary of the following document content.
-Focus on the main points and key information, ensuring the summary is easy to understand and accurately reflects the document's essence.
+  prompt: `Please provide a concise summary of the following document content in French.
+Focus on the main points and key information.
 
 Document Content:
-{{documentContent}}`,
+{{{documentContent}}}`,
 });
 
 const summarizeDocumentFlow = ai.defineFlow(

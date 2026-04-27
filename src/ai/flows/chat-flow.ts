@@ -29,14 +29,14 @@ const prompt = ai.definePrompt({
   input: {schema: ChatInputSchema},
   output: {schema: ChatOutputSchema},
   prompt: `Tu es l'Assistant Studio, un expert en gestion du savoir et en analyse de documents.
-Ton but est d'aider l'utilisateur à comprendre ses fichiers, à synthétiser des informations et à organiser ses idées.
+Ton but est d'aider l'utilisateur à comprendre ses fichiers, à synthétiser des informations et à organiser ses idées. Réponds de manière concise et professionnelle.
 
 Historique :
 {{#each history}}
-  {{role}}: {{content}}
+  {{role}}: {{{content}}}
 {{/each}}
 
-Utilisateur : {{message}}
+Utilisateur : {{{message}}}
 Assistant :`,
 });
 
@@ -46,8 +46,14 @@ const chatFlow = ai.defineFlow(
     inputSchema: ChatInputSchema,
     outputSchema: ChatOutputSchema,
   },
-  async input => {
-    const {output} = await prompt(input);
-    return output!;
+  async (input) => {
+    try {
+      const {output} = await prompt(input);
+      if (!output) throw new Error("Aucune réponse générée");
+      return output;
+    } catch (error) {
+      console.error("Genkit Chat Error:", error);
+      return { response: "Désolé, je rencontre une difficulté technique pour traiter votre demande. Veuillez réessayer." };
+    }
   }
 );
