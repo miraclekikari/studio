@@ -4,7 +4,7 @@
 import React, { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Search, User, Library, Settings, LogOut, Loader2, Compass, Sparkles } from 'lucide-react'
+import { Search, User, Library, Settings, LogOut, Compass, Sparkles, UserPlus } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import {
@@ -27,14 +27,17 @@ export function Navbar() {
   const router = useRouter()
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    const init = async () => {
+      const { data: { session } } = await supabase.auth.getSession()
       if (session?.user) {
-        getOrCreateProfile(session.user.id, {
+        const p = await getOrCreateProfile(session.user.id, {
           full_name: session.user.user_metadata?.full_name || 'Membre',
-        }).then(setProfile)
+        })
+        setProfile(p)
       }
       setLoading(false)
-    })
+    }
+    init()
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (session?.user) {
@@ -54,7 +57,7 @@ export function Navbar() {
     <nav className="sticky top-0 z-50 w-full border-b bg-white/80 backdrop-blur-md">
       <div className="container mx-auto px-4 h-16 flex items-center justify-between gap-6">
         <Link href="/" className="flex items-center gap-2 group">
-          <div className="bg-primary p-2.5 rounded-2xl group-hover:rotate-12 transition-transform duration-300">
+          <div className="bg-primary p-2.5 rounded-2xl group-hover:rotate-12 transition-transform duration-300 shadow-lg shadow-primary/20">
             <Library className="w-5 h-5 text-white" />
           </div>
           <span className="font-headline font-bold text-2xl tracking-tight hidden sm:inline-block">Studio</span>
@@ -86,14 +89,14 @@ export function Navbar() {
           ) : profile ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-10 w-10 rounded-full p-0">
-                  <Avatar className="h-10 w-10 border-2 border-white shadow-sm ring-1 ring-slate-100">
+                <Button variant="ghost" className="relative h-11 w-11 rounded-full p-0 border-2 border-transparent hover:border-primary/20 transition-all">
+                  <Avatar className="h-10 w-10 shadow-sm">
                     <AvatarImage src={profile.avatar_url} alt={profile.full_name} />
-                    <AvatarFallback className="font-bold text-primary">{profile.full_name?.[0] || 'U'}</AvatarFallback>
+                    <AvatarFallback className="font-bold text-primary bg-primary/10">{profile.full_name?.[0] || 'U'}</AvatarFallback>
                   </Avatar>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-64 mt-2 rounded-[1.5rem] p-2 shadow-2xl border-slate-100" align="end">
+              <DropdownMenuContent className="w-64 mt-2 rounded-[2rem] p-3 shadow-2xl border-slate-100" align="end">
                 <DropdownMenuLabel className="font-normal px-4 py-4">
                   <div className="flex flex-col space-y-1">
                     <p className="text-base font-bold leading-none">{profile.full_name}</p>
@@ -103,20 +106,17 @@ export function Navbar() {
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild className="rounded-xl px-4 py-3 cursor-pointer">
                   <Link href="/profile" className="w-full flex items-center">
-                    <User className="mr-3 h-4 w-4" /> Profil
+                    <User className="mr-3 h-4 w-4 text-slate-400" /> Profil
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild className="rounded-xl px-4 py-3 cursor-pointer">
-                  <Link href="/library" className="w-full flex items-center">
-                    <Library className="mr-3 h-4 w-4" /> Ma Bibliothèque
+                  <Link href="/auth" className="w-full flex items-center text-primary font-bold">
+                    <UserPlus className="mr-3 h-4 w-4" /> Changer de compte
                   </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem className="rounded-xl px-4 py-3 cursor-pointer">
-                  <Settings className="mr-3 h-4 w-4" /> Paramètres
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem 
-                  className="text-red-500 focus:bg-red-50 focus:text-red-600 rounded-xl px-4 py-3 cursor-pointer" 
+                  className="text-red-500 focus:bg-red-50 focus:text-red-600 rounded-xl px-4 py-3 cursor-pointer font-bold" 
                   onClick={() => supabase.auth.signOut().then(() => router.push('/'))}
                 >
                   <LogOut className="mr-3 h-4 w-4" /> Déconnexion
