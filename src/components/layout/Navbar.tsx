@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter, usePathname } from 'next/navigation'
-import { Search, User, Library, Settings, LogOut, Compass, Sparkles, UserPlus } from 'lucide-react'
+import { Search, User, Library, LogOut, Compass, Sparkles, UserPlus } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import {
@@ -17,14 +17,11 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { supabase, isSupabaseConfigured } from '@/lib/supabase'
 import { getOrCreateProfile, type Profile } from '@/lib/db'
-import { useToast } from '@/hooks/use-toast'
 import { cn } from '@/lib/utils'
 
 export function Navbar() {
   const [profile, setProfile] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
-  const { toast } = useToast()
-  const router = useRouter()
   const pathname = usePathname()
 
   useEffect(() => {
@@ -84,7 +81,7 @@ export function Navbar() {
             href="/explore" 
             className={cn(
               "flex items-center gap-2 px-6 py-2 text-xs font-bold transition-all uppercase tracking-widest rounded-full",
-              pathname === '/explore' ? "text-primary bg-primary/5" : "text-slate-500 hover:text-primary hover:bg-slate-50"
+              pathname === '/explore' ? "text-primary bg-primary/5" : "text-slate-500 hover:text-primary hover:bg-slate-100"
             )}
           >
             <Compass className="w-4 h-4" /> Explorer
@@ -93,7 +90,7 @@ export function Navbar() {
             href="/assistant" 
             className={cn(
               "flex items-center gap-2 px-6 py-2 text-xs font-bold transition-all uppercase tracking-widest rounded-full",
-              pathname === '/assistant' ? "text-primary bg-primary/5" : "text-slate-500 hover:text-primary hover:bg-slate-50"
+              pathname === '/assistant' ? "text-primary bg-primary/5" : "text-slate-500 hover:text-primary hover:bg-slate-100"
             )}
           >
             <Sparkles className="w-4 h-4" /> Assistant
@@ -102,7 +99,7 @@ export function Navbar() {
             href="/library" 
             className={cn(
               "flex items-center gap-2 px-6 py-2 text-xs font-bold transition-all uppercase tracking-widest rounded-full",
-              pathname === '/library' ? "text-primary bg-primary/5" : "text-slate-500 hover:text-primary hover:bg-slate-50"
+              pathname === '/library' ? "text-primary bg-primary/5" : "text-slate-500 hover:text-primary hover:bg-slate-100"
             )}
           >
             <Library className="w-4 h-4" /> Ma Bibliothèque

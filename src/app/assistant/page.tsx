@@ -18,7 +18,7 @@ interface Message {
 
 export default function AssistantPage() {
   const [messages, setMessages] = useState<Message[]>([
-    { role: 'model', content: 'Bonjour ! Je suis l\'Assistant Studio. Je peux vous aider à analyser vos documents ou répondre à vos questions. Que puis-je faire pour vous ?' }
+    { role: 'model', content: 'Bonjour ! Je suis l\'Assistant Studio. Je peux vous aider à explorer vos ressources ou répondre à vos questions complexes. Que souhaitez-vous approfondir ?' }
   ])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
@@ -46,8 +46,7 @@ export default function AssistantPage() {
     setLoading(true)
 
     try {
-      // On envoie les 10 derniers messages pour le contexte
-      const history = messages.slice(-10).map(m => ({ role: m.role, content: m.content }))
+      const history = messages.slice(-6).map(m => ({ role: m.role, content: m.content }))
       
       const result = await chatWithAssistant({
         message: userMessage,
@@ -60,22 +59,17 @@ export default function AssistantPage() {
         throw new Error("Réponse vide")
       }
     } catch (error) {
-      console.error("AI Error:", error)
-      toast({ title: "Erreur Assistant", description: "L'intelligence est momentanément indisponible.", variant: "destructive" })
-      setMessages(prev => [...prev, { role: 'model', content: "Désolé, je rencontre une petite perturbation technique. Essayons encore une fois ?" }])
+      console.error("Assistant Communication Error:", error)
+      toast({ title: "Accès différé", description: "Le système est momentanément saturé.", variant: "destructive" })
+      setMessages(prev => [...prev, { role: 'model', content: "Désolé, une perturbation empêche l'analyse immédiate. Essayons à nouveau ?" }])
     } finally {
       setLoading(false)
     }
   }
 
   const handleClear = () => {
-    setMessages([{ role: 'model', content: 'Conversation réinitialisée. Comment puis-je vous aider ?' }])
-    toast({ title: "Discussion effacée" })
-  }
-
-  const handleNew = () => {
-    handleClear()
-    toast({ title: "Nouvelle session" })
+    setMessages([{ role: 'model', content: 'Session réinitialisée. En quoi puis-je vous aider ?' }])
+    toast({ title: "Historique effacé" })
   }
 
   return (
@@ -85,14 +79,14 @@ export default function AssistantPage() {
       <main className="flex-1 container mx-auto px-4 py-6 max-w-4xl flex flex-col min-h-0">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
-            <div className="p-3 bg-primary rounded-2xl shadow-xl shadow-primary/20 rotate-3">
+            <div className="p-3 bg-primary rounded-2xl shadow-xl shadow-primary/20">
               <Sparkles className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h1 className="text-xl font-headline font-bold text-slate-900">Assistant Studio</h1>
+              <h1 className="text-xl font-headline font-bold text-slate-900 leading-tight">Assistant Studio</h1>
               <div className="flex items-center gap-2">
-                <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest text-xs">Intelligence Active</p>
+                <span className="w-2 h-2 bg-green-500 rounded-full" />
+                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Système Opérationnel</p>
               </div>
             </div>
           </div>
@@ -101,7 +95,7 @@ export default function AssistantPage() {
               variant="outline" 
               size="sm" 
               className="rounded-full border-slate-200 bg-white font-bold h-10 px-4" 
-              onClick={handleNew}
+              onClick={handleClear}
             >
               <Plus className="w-4 h-4 mr-2" /> Nouveau
             </Button>
@@ -109,9 +103,9 @@ export default function AssistantPage() {
               variant="ghost" 
               size="sm" 
               onClick={handleClear}
-              className="text-slate-400 hover:text-red-500 rounded-full font-bold h-10 px-4"
+              className="text-slate-400 hover:text-red-500 rounded-full font-bold h-10"
             >
-              <Eraser className="w-4 h-4 mr-2" /> Effacer
+              <Eraser className="w-4 h-4" />
             </Button>
           </div>
         </div>
@@ -121,8 +115,8 @@ export default function AssistantPage() {
             {messages.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center text-center p-10">
                 <MessageSquare className="w-16 h-16 text-slate-100 mb-6" />
-                <h2 className="text-2xl font-headline font-bold text-slate-800">Démarrer une discussion</h2>
-                <p className="text-slate-400 mt-2 max-w-sm">Posez une question sur vos documents ou sur n'importe quel sujet.</p>
+                <h2 className="text-2xl font-headline font-bold text-slate-800">Démarrer une analyse</h2>
+                <p className="text-slate-400 mt-2 max-w-sm">Interrogez le système sur vos ressources ou sur un sujet spécifique.</p>
               </div>
             ) : (
               <div className="space-y-8 pb-10">
@@ -133,14 +127,14 @@ export default function AssistantPage() {
                   )}>
                     <div className={cn(
                       "w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-sm",
-                      msg.role === 'user' ? "bg-white text-slate-400 border border-slate-100" : "bg-primary text-white"
+                      msg.role === 'user' ? "bg-white text-slate-300 border border-slate-100" : "bg-primary text-white"
                     )}>
                       {msg.role === 'user' ? <User className="w-5 h-5" /> : <Bot className="w-5 h-5" />}
                     </div>
                     <div className={cn(
-                      "p-5 rounded-[1.8rem] text-sm md:text-base leading-relaxed shadow-sm",
+                      "p-5 rounded-[1.8rem] text-sm md:text-base leading-relaxed",
                       msg.role === 'user' 
-                        ? "bg-slate-50 text-slate-800 rounded-tr-none border border-slate-100" 
+                        ? "bg-slate-100 text-slate-800 rounded-tr-none" 
                         : "bg-primary/5 text-slate-900 rounded-tl-none border border-primary/10"
                     )}>
                       {msg.content}
@@ -148,8 +142,8 @@ export default function AssistantPage() {
                   </div>
                 ))}
                 {loading && (
-                  <div className="flex gap-4 mr-auto animate-in fade-in duration-300">
-                    <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center shadow-lg">
+                  <div className="flex gap-4 mr-auto">
+                    <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
                       <Loader2 className="w-5 h-5 text-white animate-spin" />
                     </div>
                     <div className="p-5 rounded-[1.8rem] rounded-tl-none bg-slate-50 border border-slate-100 flex items-center gap-2">
@@ -169,7 +163,7 @@ export default function AssistantPage() {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-                placeholder="Posez votre question..."
+                placeholder="Votre message..."
                 className="h-16 pl-6 pr-16 bg-white border-none shadow-xl rounded-full text-lg focus-visible:ring-primary focus-visible:ring-offset-0 placeholder:text-slate-300"
                 disabled={loading}
               />
@@ -177,13 +171,13 @@ export default function AssistantPage() {
                 onClick={handleSend}
                 disabled={loading || !input.trim()}
                 size="icon" 
-                className="absolute right-2 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full shadow-lg shadow-primary/30 transition-transform active:scale-95 bg-primary hover:bg-primary/90"
+                className="absolute right-2 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full shadow-lg shadow-primary/30 bg-primary hover:bg-primary/90"
               >
                 <Send className="w-5 h-5" />
               </Button>
             </div>
             <p className="text-[9px] text-center text-slate-300 mt-5 font-bold uppercase tracking-[0.2em]">
-              Intelligence Studio • Sécurisé & Privé
+              Système Studio • Analyse Sécurisée
             </p>
           </div>
         </Card>
