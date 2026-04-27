@@ -1,4 +1,3 @@
-
 "use client"
 
 import React, { useState, useEffect } from 'react'
@@ -44,7 +43,6 @@ export default function DocumentDetailPage() {
         const data = await getDocumentById(id)
         if (data) {
           setDocData(data)
-          // Utilisation obligatoire du RPC pour les vues
           incrementDocumentViews(id).catch(console.error)
         }
       } catch (err) {
@@ -56,6 +54,13 @@ export default function DocumentDetailPage() {
     init()
   }, [id])
 
+  const getDownloadUrl = (url: string) => {
+    if (url.includes('cloudinary.com') && url.includes('/upload/')) {
+      return url.replace('/upload/', '/upload/fl_attachment/');
+    }
+    return url;
+  }
+
   const handleLike = async () => {
     if (!userId || !docData?.id) {
       toast({ title: "Connexion requise", description: "Veuillez vous connecter pour aimer ce document.", variant: "destructive" })
@@ -63,7 +68,6 @@ export default function DocumentDetailPage() {
     }
 
     try {
-      // Utilisation obligatoire du RPC pour les likes
       await toggleLikeDocument(docData.id, userId)
       toast({ title: "Merci pour votre vote !" })
       setDocData(prev => prev ? { ...prev, likes: prev.likes + 1 } : null)
@@ -163,7 +167,7 @@ export default function DocumentDetailPage() {
                     <Heart className="w-4 h-4" /> {docData.likes}
                   </Button>
                   <Button size="lg" className="rounded-full gap-2 shadow-lg shadow-primary/20 px-8 font-bold" asChild>
-                    <a href={docData.file_url} target="_blank" rel="noopener noreferrer">
+                    <a href={getDownloadUrl(docData.file_url)} download={docData.title}>
                       <Download className="w-4 h-4" /> Télécharger
                     </a>
                   </Button>
@@ -191,11 +195,9 @@ export default function DocumentDetailPage() {
                 <div className="space-y-4">
                   <h2 className="text-xl font-headline font-bold text-slate-800">Thématiques</h2>
                   <div className="flex flex-wrap gap-2">
-                    {docData.tags?.map(tag => (
-                      <Badge key={tag} variant="secondary" className="px-3 py-1 bg-primary/5 text-primary border-none rounded-full font-bold">
-                        #{tag}
-                      </Badge>
-                    ))}
+                    <Badge variant="secondary" className="px-3 py-1 bg-primary/5 text-primary border-none rounded-full font-bold">
+                      #{docData.category}
+                    </Badge>
                   </div>
                 </div>
               </div>

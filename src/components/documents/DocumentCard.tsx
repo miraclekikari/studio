@@ -35,6 +35,13 @@ export function DocumentCard({ id, title, author, authorAvatar, thumbnail, file_
     })
   }, [])
 
+  const getDownloadUrl = (url: string) => {
+    if (url.includes('cloudinary.com') && url.includes('/upload/')) {
+      return url.replace('/upload/', '/upload/fl_attachment/');
+    }
+    return url;
+  }
+
   const handleLike = async (e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
@@ -65,15 +72,6 @@ export function DocumentCard({ id, title, author, authorAvatar, thumbnail, file_
     toast({ title: "Lien copié !", description: "Le savoir est prêt à être partagé." })
   }
 
-  const handleDownload = (e: React.MouseEvent) => {
-    e.stopPropagation()
-    if (!file_url) {
-        toast({ title: "Erreur", description: "Fichier source introuvable.", variant: "destructive" })
-        return
-    }
-    toast({ title: "Téléchargement lancé", description: "Votre ressource arrive." })
-  }
-
   return (
     <Card className="group flex flex-col h-full border-none bg-white shadow-[0_4px_20px_rgba(0,0,0,0.05)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.1)] transition-all duration-500 rounded-[2rem] overflow-hidden">
       <CardHeader className="p-0 relative aspect-[4/5] overflow-hidden">
@@ -92,8 +90,8 @@ export function DocumentCard({ id, title, author, authorAvatar, thumbnail, file_
             </Link>
           </Button>
           {file_url && (
-            <Button size="icon" variant="secondary" className="rounded-full w-12 h-12 shadow-2xl hover:scale-110 transition-transform" onClick={handleDownload} asChild>
-              <a href={file_url} target="_blank" rel="noopener noreferrer" download>
+            <Button size="icon" variant="secondary" className="rounded-full w-12 h-12 shadow-2xl hover:scale-110 transition-transform" asChild>
+              <a href={getDownloadUrl(file_url)} download={title}>
                 <Download className="w-6 h-6" />
               </a>
             </Button>
@@ -128,7 +126,7 @@ export function DocumentCard({ id, title, author, authorAvatar, thumbnail, file_
             </Button>
             {file_url && (
                 <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-primary rounded-full" asChild>
-                    <a href={file_url} target="_blank" rel="noopener noreferrer" download>
+                    <a href={getDownloadUrl(file_url)} download={title}>
                         <Download className="w-4 h-4" />
                     </a>
                 </Button>
