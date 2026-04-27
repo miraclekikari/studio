@@ -32,7 +32,7 @@ export function RecommendationList() {
         }))
 
         const { data: { user } } = await supabase.auth.getUser()
-        let userInterests = ["Technologie", "IA", "Design"]
+        let userInterests = ["Technologie", "Design", "Savoir"]
 
         if (user) {
           const profile = await getOrCreateProfile(user.id, {})
@@ -48,7 +48,7 @@ export function RecommendationList() {
 
         setRecommendations(result.recommendations)
       } catch (err) {
-        console.error("Failed to fetch recommendations:", err)
+        console.error("Recommendations error:", err)
       } finally {
         setLoading(false)
       }
@@ -57,42 +57,41 @@ export function RecommendationList() {
   }, [])
 
   if (loading) return (
-    <div className="h-64 flex flex-col items-center justify-center bg-white/40 backdrop-blur-xl rounded-[3rem] border border-white/20 shadow-xl mb-12">
-      <Loader2 className="w-12 h-12 animate-spin text-primary/20" />
-      <span className="text-sm font-bold text-slate-400 mt-4 uppercase tracking-widest">IA en cours...</span>
+    <div className="h-64 flex flex-col items-center justify-center bg-white/40 backdrop-blur-xl rounded-[3rem] border border-white/10 shadow-sm mb-12">
+      <Loader2 className="w-10 h-10 animate-spin text-primary opacity-20" />
     </div>
   )
 
   if (recommendations.length === 0) return null
 
   return (
-    <section className="mb-20">
+    <section className="mb-24">
       <div className="flex items-center justify-between mb-10">
-        <div className="flex items-center gap-4">
-          <div className="bg-gradient-to-br from-primary to-secondary p-3 rounded-[1.25rem] shadow-lg shadow-primary/20">
+        <div className="flex items-center gap-5">
+          <div className="bg-gradient-to-br from-primary to-secondary p-4 rounded-[1.5rem] shadow-xl shadow-primary/10">
             <Sparkles className="w-6 h-6 text-white" />
           </div>
           <div>
             <h2 className="text-3xl font-headline font-bold text-slate-900 tracking-tight">Sélectionné pour vous</h2>
-            <p className="text-sm text-slate-500 font-medium">Basé sur vos intérêts</p>
+            <p className="text-sm text-slate-400 font-bold uppercase tracking-widest">Basé sur vos préférences</p>
           </div>
         </div>
       </div>
 
-      <ScrollArea className="w-full whitespace-nowrap pb-6">
-        <div className="flex gap-8">
+      <ScrollArea className="w-full whitespace-nowrap pb-8">
+        <div className="flex gap-10">
           {recommendations.map((rec) => (
-            <Link key={rec.documentId} href={`/document/${rec.documentId}`} className="w-[320px] shrink-0 block group">
-              <Card className="bg-white border-none shadow-sm hover:shadow-xl transition-all duration-500 rounded-[2.5rem] overflow-hidden h-full border border-slate-50">
-                <CardContent className="p-8">
-                  <div className="inline-flex items-center gap-2 px-3 py-1 bg-primary/10 rounded-full mb-4">
-                    <Sparkle className="w-3 h-3 text-primary animate-spin-slow" />
-                    <span className="text-[10px] font-black text-primary uppercase">IA Recommend</span>
+            <Link key={rec.documentId} href={`/document/${rec.documentId}`} className="w-[340px] shrink-0 block group">
+              <Card className="bg-white border-none shadow-sm hover:shadow-2xl transition-all duration-500 rounded-[2.5rem] overflow-hidden h-full border border-slate-50">
+                <CardContent className="p-10">
+                  <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-primary/5 rounded-full mb-6">
+                    <Sparkle className="w-3 h-3 text-primary animate-pulse" />
+                    <span className="text-[10px] font-black text-primary uppercase tracking-tighter">Suggéré</span>
                   </div>
-                  <h3 className="font-headline font-bold text-xl mb-3 whitespace-normal line-clamp-2 text-slate-900">
+                  <h3 className="font-headline font-bold text-2xl mb-4 whitespace-normal line-clamp-2 text-slate-900 leading-tight group-hover:text-primary transition-colors">
                     {rec.title}
                   </h3>
-                  <p className="text-xs italic text-slate-400 whitespace-normal leading-relaxed">
+                  <p className="text-sm font-medium text-slate-400 whitespace-normal leading-relaxed italic opacity-80">
                     "{rec.reasons}"
                   </p>
                 </CardContent>
