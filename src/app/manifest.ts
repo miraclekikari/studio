@@ -1,23 +1,23 @@
-
 import { MetadataRoute } from 'next'
  
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'LibreShare Studio',
+    name: 'LibreShare - Partage de Savoir',
     short_name: 'LibreShare',
-    description: 'Partage social de documents et connaissances',
+    description: 'Une plateforme sociale pour partager et découvrir des documents propulsée par l\'IA.',
     start_url: '/',
     display: 'standalone',
-    background_color: '#ffffff',
+    background_color: '#F8FAFC',
     theme_color: '#63A5DE',
     icons: [
       {
-        src: 'https://picsum.photos/seed/icon192/192/192',
+        src: 'https://picsum.photos/seed/libreshare192/192/192',
         sizes: '192x192',
         type: 'image/png',
+        purpose: 'maskable',
       },
       {
-        src: 'https://picsum.photos/seed/icon512/512/512',
+        src: 'https://picsum.photos/seed/libreshare512/512/512',
         sizes: '512x512',
         type: 'image/png',
       },

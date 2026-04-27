@@ -9,7 +9,8 @@ import {
   serverTimestamp,
   doc,
   setDoc,
-  getDoc
+  getDoc,
+  limit
 } from 'firebase/firestore';
 
 export interface DocumentData {
@@ -28,6 +29,15 @@ export interface DocumentData {
   format: string;
 }
 
+export interface UserProfile {
+  uid: string;
+  username: string;
+  fullName: string;
+  avatarUrl: string;
+  bio: string;
+  updatedAt: any;
+}
+
 export const saveDocument = async (data: Omit<DocumentData, 'id' | 'createdAt' | 'likes' | 'views'>) => {
   return await addDoc(collection(db, 'documents'), {
     ...data,
@@ -37,9 +47,9 @@ export const saveDocument = async (data: Omit<DocumentData, 'id' | 'createdAt' |
   });
 };
 
-export const getLatestDocuments = async () => {
+export const getLatestDocuments = async (count: number = 10) => {
   try {
-    const q = query(collection(db, 'documents'), orderBy('createdAt', 'desc'));
+    const q = query(collection(db, 'documents'), orderBy('createdAt', 'desc'), limit(count));
     const snapshot = await getDocs(q);
     return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as DocumentData));
   } catch (error) {
@@ -48,8 +58,38 @@ export const getLatestDocuments = async () => {
   }
 };
 
-export const getProfile = async (userId: string) => {
-  const docRef = doc(db, 'profiles', userId);
+export const getUserDocuments = async (userId: string) => {
+  try {
+    const q = query(collection(db, 'documents'), where('userId', '==', userId), orderBy('createdAt', 'desc'));
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as DocumentData));
+  } catch (error) {
+    console.error("Erreur lors de la récupération des documents utilisateur:", error);
+    return [];
+  }
+};
+
+export const getOrCreateProfile = async (uid: string, defaultData: Partial<UserProfile>) => {
+  const docRef = doc(db, 'profiles', uid);
   const docSnap = await getDoc(docRef);
-  return docSnap.exists() ? docSnap.data() : null;
+  
+  if (docSnap.exists()) {
+    return docSnap.data() as UserProfile;
+  } else {
+    const newProfile = {
+      uid,
+      username: defaultData.username || `user_${uid.substring(0, 5)}`,
+      fullName: defaultData.fullName || 'Utilisateur LibreShare',
+      avatarUrl: defaultData.avatarUrl || `https://picsum.photos/seed/${uid}/200/200`,
+      bio: defaultData.bio || 'Passionné de savoir.',
+      updatedAt: serverTimestamp(),
+    };
+    await setDoc(docRef, newProfile);
+    return newProfile;
+  }
+};
+
+export const updateProfile = async (uid: string, data: Partial<UserProfile>) => {
+  const docRef = doc(db, 'profiles', uid);
+  return await setDoc(docRef, { ...data, updatedAt: serverTimestamp() }, { merge: true });
 };
