@@ -40,7 +40,7 @@ const chatFlow = ai.defineFlow(
         return { response: "En quoi puis-je vous éclairer ?" };
       }
 
-      // Nettoyage de l'historique pour le modèle
+      // Construction des messages pour Gemini
       const messages = (input.history || []).map(h => ({
         role: h.role,
         content: [{ text: h.content }]
@@ -57,19 +57,21 @@ const chatFlow = ai.defineFlow(
         system: `Tu es l'Assistant Studio, un expert en gestion du savoir et en analyse de documents.
         Ton but est d'aider l'utilisateur à organiser ses idées et à synthétiser ses ressources.
         Réponds de manière élégante, concise et professionnelle en français.
-        N'utilise jamais le mot "IA" ou "Intelligence Artificielle", parle de "Système Studio" ou "Analyse".`,
+        N'utilise jamais le mot "IA" ou "Intelligence Artificielle", parle de "Système Studio" ou "Analyse".
+        Sois chaleureux mais expert.`,
         messages: messages
       });
       
       if (!text) {
-        throw new Error("Réponse vide");
+        throw new Error("Le modèle n'a renvoyé aucun texte.");
       }
       
       return { response: text };
-    } catch (error) {
-      console.error("Assistant Error:", error);
+    } catch (error: any) {
+      console.error("Assistant Flow Error:", error);
+      // Message plus informatif pour le debug (sera caché en production)
       return { 
-        response: "Je rencontre une légère difficulté technique pour traiter cette analyse. Pourriez-vous reformuler ?" 
+        response: `Je rencontre une difficulté de connexion avec mes modules d'analyse. Veuillez vérifier que la clé API est bien configurée.` 
       };
     }
   }

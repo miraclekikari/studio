@@ -1,3 +1,4 @@
+
 "use client"
 
 import React, { useState, useRef, useEffect } from 'react'
@@ -60,8 +61,8 @@ export default function AssistantPage() {
       }
     } catch (error) {
       console.error("Assistant Communication Error:", error)
-      toast({ title: "Accès différé", description: "Le système est momentanément saturé.", variant: "destructive" })
-      setMessages(prev => [...prev, { role: 'model', content: "Désolé, une perturbation empêche l'analyse immédiate. Essayons à nouveau ?" }])
+      toast({ title: "Accès différé", description: "Vérifiez la configuration de l'API.", variant: "destructive" })
+      setMessages(prev => [...prev, { role: 'model', content: "Désolé, une perturbation technique empêche l'analyse. Vérifiez que la clé API Gemini est bien configurée dans vos secrets." }])
     } finally {
       setLoading(false)
     }
@@ -86,7 +87,7 @@ export default function AssistantPage() {
               <h1 className="text-xl font-headline font-bold text-slate-900 leading-tight">Assistant Studio</h1>
               <div className="flex items-center gap-2">
                 <span className="w-2 h-2 bg-green-500 rounded-full" />
-                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Système Opérationnel</p>
+                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Système de Savoir</p>
               </div>
             </div>
           </div>
@@ -176,9 +177,6 @@ export default function AssistantPage() {
                 <Send className="w-5 h-5" />
               </Button>
             </div>
-            <p className="text-[9px] text-center text-slate-300 mt-5 font-bold uppercase tracking-[0.2em]">
-              Système Studio • Analyse Sécurisée
-            </p>
           </div>
         </Card>
       </main>
