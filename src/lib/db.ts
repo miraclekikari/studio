@@ -30,7 +30,7 @@ export interface Document {
  * Récupère ou crée un profil utilisateur Supabase
  */
 export async function getOrCreateProfile(uid: string, defaultData: Partial<Profile>): Promise<Profile | null> {
-  const { data: profile, error } = await supabase
+  const { data: profile, error: fetchError } = await supabase
     .from('profiles')
     .select('*')
     .eq('id', uid)
@@ -38,7 +38,6 @@ export async function getOrCreateProfile(uid: string, defaultData: Partial<Profi
 
   if (profile) return profile;
 
-  // Création si inexistant (code d'erreur pour ligne non trouvée)
   const newProfile = {
     id: uid,
     username: defaultData.username || `user_${uid.substring(0, 5)}`,
@@ -75,7 +74,10 @@ export async function saveDocument(doc: Omit<Document, 'id' | 'created_at' | 'li
     .select()
     .single();
 
-  if (error) throw error;
+  if (error) {
+    console.error("Erreur insertion document:", error);
+    throw error;
+  }
   return data;
 }
 
@@ -90,14 +92,14 @@ export async function getLatestDocuments(limitCount: number = 20): Promise<Docum
     .limit(limitCount);
 
   if (error) {
-    console.error("Erreur lors de la récupération des docs:", error);
+    console.error("Erreur fetch docs:", error);
     return [];
   }
-  return data as Document[];
+  return (data as any[]) || [];
 }
 
 /**
- * Récupère un document par ID
+ * Récupère un document par son ID
  */
 export async function getDocumentById(id: string): Promise<Document | null> {
   const { data, error } = await supabase
@@ -107,13 +109,14 @@ export async function getDocumentById(id: string): Promise<Document | null> {
     .single();
 
   if (error) return null;
-  return data as Document;
+  return data as any;
 }
 
 /**
- * Incrémente les vues
+ * Incrémente le compteur de vues (RPC ou update direct)
  */
 export async function incrementDocumentViews(id: string) {
+  // Dans un vrai projet, on utiliserait une fonction PostgreSQL 'rpc' pour l'atomicité
   const { data: current } = await supabase.from('documents').select('views').eq('id', id).single();
   if (current) {
     await supabase.from('documents').update({ views: (current.views || 0) + 1 }).eq('id', id);
@@ -121,7 +124,7 @@ export async function incrementDocumentViews(id: string) {
 }
 
 /**
- * Gère les likes de façon atomique
+ * Gère les likes (Incrémentation simple pour ce prototype)
  */
 export async function toggleLikeDocument(docId: string, userId: string) {
   const { data: current } = await supabase.from('documents').select('likes').eq('id', docId).single();
@@ -132,7 +135,7 @@ export async function toggleLikeDocument(docId: string, userId: string) {
 }
 
 /**
- * Récupère les documents d'un utilisateur
+ * Récupère les documents d'un utilisateur spécifique
  */
 export async function getUserDocuments(userId: string): Promise<Document[]> {
   const { data, error } = await supabase
@@ -142,5 +145,5 @@ export async function getUserDocuments(userId: string): Promise<Document[]> {
     .order('created_at', { ascending: false });
 
   if (error) return [];
-  return data as Document[];
+  return (data as any[]) || [];
 }

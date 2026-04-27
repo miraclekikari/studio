@@ -30,14 +30,13 @@ export function UploadDocument() {
         const { data: { user } } = await supabase.auth.getUser()
         
         if (!user) {
-          toast({ variant: "destructive", title: "Non connecté", description: "Veuillez vous connecter à Supabase." })
+          toast({ variant: "destructive", title: "Non connecté", description: "Veuillez vous connecter pour publier." })
           return
         }
 
         setIsProcessing(true)
 
         try {
-          // Analyse IA des tags
           let aiTags: string[] = []
           try {
             const tagResult = await automatedDocumentTagging({ 
@@ -48,9 +47,8 @@ export function UploadDocument() {
             aiTags = ["Général", info.format || "fichier"]
           }
 
-          // Sauvegarde Supabase SQL
           await saveDocument({
-            title: info.original_filename || "Document Supabase",
+            title: info.original_filename || "Document sans titre",
             description: "Partagé via Cloudinary sur LibreShare.",
             file_url: info.secure_url,
             thumbnail_url: info.thumbnail_url || `https://placehold.co/400x600?text=${info.original_filename}`,
@@ -60,12 +58,12 @@ export function UploadDocument() {
             tags: aiTags
           })
 
-          toast({ title: "Succès !", description: "Votre document est en ligne sur Supabase." })
+          toast({ title: "Document publié !", description: "Votre savoir est maintenant partagé sur Supabase." })
           router.refresh()
           window.location.reload()
         } catch (error) {
-          console.error("Upload save error:", error)
-          toast({ variant: "destructive", title: "Erreur", description: "Impossible d'enregistrer sur Supabase." })
+          console.error("Upload error:", error)
+          toast({ variant: "destructive", title: "Erreur Supabase", description: "Impossible d'enregistrer le document." })
         } finally {
           setIsProcessing(false)
         }
@@ -76,10 +74,10 @@ export function UploadDocument() {
           onClick={() => open()}
           size="lg"
           disabled={isProcessing}
-          className="rounded-full px-8 flex items-center gap-2 bg-primary hover:bg-primary/90 shadow-xl transition-all"
+          className="rounded-full px-8 flex items-center gap-2 bg-primary hover:bg-primary/90 shadow-xl"
         >
           {isProcessing ? <Loader2 className="w-5 h-5 animate-spin" /> : <Plus className="w-5 h-5" />}
-          <span className="font-bold">{isProcessing ? "Traitement..." : "Publier"}</span>
+          <span className="font-bold">{isProcessing ? "Publication..." : "Publier"}</span>
         </Button>
       )}
     </CldUploadWidget>
