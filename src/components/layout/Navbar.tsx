@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { Search, Plus, User, Library, Settings, LogOut } from 'lucide-react'
+import { Search, User, Library, Settings, LogOut, Loader2 } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import {
@@ -15,20 +15,62 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { auth } from '@/firebase/config'
-import { onAuthStateChanged, signOut, type User as FirebaseUser } from 'firebase/auth'
+import { onAuthStateChanged, signOut, type User as FirebaseUser, GoogleAuthProvider, signInWithPopup } from 'firebase/auth'
+import { getOrCreateProfile } from '@/lib/db'
+import { useToast } from '@/hooks/use-toast'
 
 export function Navbar() {
   const [user, setUser] = useState<FirebaseUser | null>(null)
+  const [loading, setLoading] = useState(true)
+  const { toast } = useToast()
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (u) => {
+    const unsubscribe = onAuthStateChanged(auth, async (u) => {
       setUser(u)
+      if (u) {
+        // S'assurer que le profil existe en base
+        try {
+          await getOrCreateProfile(u.uid, {
+            fullName: u.displayName || 'Utilisateur',
+            avatarUrl: u.photoURL || ''
+          })
+        } catch (err) {
+          console.error("Erreur profil:", err)
+        }
+      }
+      setLoading(false)
     })
     return () => unsubscribe()
   }, [])
 
-  const handleSignOut = () => {
-    signOut(auth)
+  const handleSignIn = async () => {
+    const provider = new GoogleAuthProvider()
+    try {
+      await signInWithPopup(auth, provider)
+      toast({
+        title: "Bienvenue ! 👋",
+        description: "Vous êtes maintenant connecté.",
+      })
+    } catch (error: any) {
+      console.error("Erreur de connexion:", error)
+      toast({
+        variant: "destructive",
+        title: "Erreur de connexion",
+        description: error.message || "Impossible de se connecter.",
+      })
+    }
+  }
+
+  const handleSignOut = async () => {
+    try {
+      await signOut(auth)
+      toast({
+        title: "Déconnexion",
+        description: "À bientôt sur LibreShare !",
+      })
+    } catch (error) {
+      console.error("Erreur de déconnexion:", error)
+    }
   }
 
   return (
@@ -50,7 +92,9 @@ export function Navbar() {
         </div>
 
         <div className="flex items-center gap-2">
-          {user ? (
+          {loading ? (
+            <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+          ) : user ? (
             <>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -94,7 +138,9 @@ export function Navbar() {
               </DropdownMenu>
             </>
           ) : (
-            <Button variant="default" className="rounded-full px-6">Connexion</Button>
+            <Button variant="default" className="rounded-full px-6" onClick={handleSignIn}>
+              Connexion
+            </Button>
           )}
         </div>
       </div>
