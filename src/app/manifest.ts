@@ -2,9 +2,9 @@ import { MetadataRoute } from 'next'
  
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'LibreShare Studio',
+    name: 'LibreShare Social Library',
     short_name: 'LibreShare',
-    description: 'Une bibliothèque sociale propulsée par l\'IA.',
+    description: 'Partagez et découvrez le savoir avec l\'IA.',
     start_url: '/',
     display: 'standalone',
     background_color: '#F8FAFC',
@@ -20,6 +20,7 @@ export default function manifest(): MetadataRoute.Manifest {
         src: 'https://picsum.photos/seed/libreshare512/512/512',
         sizes: '512x512',
         type: 'image/png',
+        purpose: 'any',
       },
     ],
   }
