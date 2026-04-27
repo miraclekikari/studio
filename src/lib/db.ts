@@ -1,175 +1,147 @@
-import { db } from '@/firebase/config';
-import { 
-  collection, 
-  addDoc, 
-  getDocs, 
-  query, 
-  where, 
-  orderBy, 
-  serverTimestamp,
-  doc,
-  setDoc,
-  getDoc,
-  updateDoc,
-  increment,
-  limit,
-  Timestamp,
-  arrayUnion,
-  arrayRemove
-} from 'firebase/firestore';
 
-export interface DocumentData {
-  id?: string;
+import { supabase } from './supabase';
+
+export interface Profile {
+  id: string;
+  username: string;
+  full_name: string;
+  avatar_url: string;
+  bio: string;
+  interests: string[];
+  followers: number;
+  following: number;
+}
+
+export interface Document {
+  id: string;
   title: string;
   description: string;
-  fileUrl: string;
-  thumbnailUrl: string;
+  file_url: string;
+  thumbnail_url: string;
   category: string;
-  userId: string;
-  userName: string;
-  userAvatar?: string;
-  createdAt: Timestamp | any;
+  user_id: string;
   likes: number;
-  likedBy?: string[];
   views: number;
   format: string;
-  tags?: string[];
+  tags: string[];
+  created_at: string;
+  profiles?: Profile;
 }
-
-export interface UserProfile {
-  uid: string;
-  username: string;
-  fullName: string;
-  avatarUrl: string;
-  bio: string;
-  updatedAt: Timestamp | any;
-  followers?: number;
-  following?: number;
-  interests?: string[];
-}
-
-/**
- * Enregistre un nouveau document dans Firestore
- */
-export const saveDocument = async (data: Omit<DocumentData, 'id' | 'createdAt' | 'likes' | 'views' | 'likedBy'>) => {
-  return await addDoc(collection(db, 'documents'), {
-    ...data,
-    createdAt: serverTimestamp(),
-    likes: 0,
-    likedBy: [],
-    views: 0
-  });
-};
-
-/**
- * Récupère un document spécifique par son ID
- */
-export const getDocumentById = async (id: string): Promise<DocumentData | null> => {
-  try {
-    const docRef = doc(db, 'documents', id);
-    const docSnap = await getDoc(docRef);
-    if (docSnap.exists()) {
-      return { id: docSnap.id, ...docSnap.data() } as DocumentData;
-    }
-  } catch (error) {
-    console.error("Erreur getDocumentById:", error);
-  }
-  return null;
-};
-
-/**
- * Incrémente le compteur de vues d'un document
- */
-export const incrementDocumentViews = async (id: string) => {
-  try {
-    const docRef = doc(db, 'documents', id);
-    await updateDoc(docRef, {
-      views: increment(1)
-    });
-  } catch (error) {
-    console.error("Erreur incrementDocumentViews:", error);
-  }
-};
-
-/**
- * Gère le système de Like/Unlike
- */
-export const toggleLikeDocument = async (docId: string, userId: string) => {
-  try {
-    const docRef = doc(db, 'documents', docId);
-    const docSnap = await getDoc(docRef);
-    if (!docSnap.exists()) return;
-    
-    const data = docSnap.data() as DocumentData;
-    const likedBy = data.likedBy || [];
-    const isLiked = likedBy.includes(userId);
-
-    if (isLiked) {
-      await updateDoc(docRef, {
-        likes: increment(-1),
-        likedBy: arrayRemove(userId)
-      });
-    } else {
-      await updateDoc(docRef, {
-        likes: increment(1),
-        likedBy: arrayUnion(userId)
-      });
-    }
-  } catch (error) {
-    console.error("Erreur toggleLikeDocument:", error);
-  }
-};
-
-/**
- * Liste les documents les plus récents
- */
-export const getLatestDocuments = async (count: number = 20): Promise<DocumentData[]> => {
-  try {
-    const q = query(collection(db, 'documents'), orderBy('createdAt', 'desc'), limit(count));
-    const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as DocumentData));
-  } catch (error) {
-    console.error("Erreur getLatestDocuments:", error);
-    return [];
-  }
-};
-
-/**
- * Récupère les documents d'un utilisateur spécifique
- */
-export const getUserDocuments = async (userId: string): Promise<DocumentData[]> => {
-  try {
-    const q = query(collection(db, 'documents'), where('userId', '==', userId), orderBy('createdAt', 'desc'));
-    const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as DocumentData));
-  } catch (error) {
-    console.error("Erreur getUserDocuments:", error);
-    return [];
-  }
-};
 
 /**
  * Récupère ou crée un profil utilisateur
  */
-export const getOrCreateProfile = async (uid: string, defaultData: Partial<UserProfile>): Promise<UserProfile> => {
-  const docRef = doc(db, 'profiles', uid);
-  const docSnap = await getDoc(docRef);
-  
-  if (docSnap.exists()) {
-    return docSnap.data() as UserProfile;
-  } else {
-    const newProfile: UserProfile = {
-      uid,
+export async function getOrCreateProfile(uid: string, defaultData: Partial<Profile>): Promise<Profile | null> {
+  const { data: profile, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', uid)
+    .single();
+
+  if (profile) return profile;
+
+  if (error && error.code === 'PGRST116') {
+    const newProfile = {
+      id: uid,
       username: defaultData.username || `user_${uid.substring(0, 5)}`,
-      fullName: defaultData.fullName || 'Utilisateur',
-      avatarUrl: defaultData.avatarUrl || `https://picsum.photos/seed/${uid}/200/200`,
+      full_name: defaultData.full_name || 'Utilisateur',
+      avatar_url: defaultData.avatar_url || `https://picsum.photos/seed/${uid}/200/200`,
       bio: defaultData.bio || 'Membre de la communauté LibreShare.',
       interests: defaultData.interests || ["Technologie", "Éducation"],
-      updatedAt: serverTimestamp(),
       followers: 0,
       following: 0
     };
-    await setDoc(docRef, newProfile);
-    return newProfile;
+
+    const { data, error: insertError } = await supabase
+      .from('profiles')
+      .insert([newProfile])
+      .select()
+      .single();
+
+    if (insertError) {
+      console.error("Error creating profile:", insertError);
+      return null;
+    }
+    return data;
   }
-};
+
+  return null;
+}
+
+/**
+ * Enregistre un document
+ */
+export async function saveDocument(doc: Omit<Document, 'id' | 'created_at' | 'likes' | 'views'>) {
+  const { data, error } = await supabase
+    .from('documents')
+    .insert([{ ...doc, likes: 0, views: 0 }])
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
+/**
+ * Récupère les derniers documents avec les profils
+ */
+export async function getLatestDocuments(limitCount: number = 20): Promise<Document[]> {
+  const { data, error } = await supabase
+    .from('documents')
+    .select('*, profiles(*)')
+    .order('created_at', { ascending: false })
+    .limit(limitCount);
+
+  if (error) {
+    console.error("Error fetching latest docs:", error);
+    return [];
+  }
+  return data as Document[];
+}
+
+/**
+ * Récupère un document par ID
+ */
+export async function getDocumentById(id: string): Promise<Document | null> {
+  const { data, error } = await supabase
+    .from('documents')
+    .select('*, profiles(*)')
+    .eq('id', id)
+    .single();
+
+  if (error) return null;
+  return data as Document;
+}
+
+/**
+ * Incrémente les vues
+ */
+export async function incrementDocumentViews(id: string) {
+  const { error } = await supabase.rpc('increment_views', { row_id: id });
+  if (error) console.error("Error incrementing views:", error);
+}
+
+/**
+ * Gère les likes
+ */
+export async function toggleLikeDocument(docId: string, userId: string) {
+  // Cette logique nécessite une table 'likes' pour être robuste.
+  // Pour rester simple, on va juste incrémenter la colonne 'likes' sur 'documents'.
+  const { data, error } = await supabase.rpc('toggle_like', { doc_id: docId, user_id: userId });
+  if (error) console.error("Error toggling like:", error);
+  return data;
+}
+
+/**
+ * Récupère les documents d'un utilisateur
+ */
+export async function getUserDocuments(userId: string): Promise<Document[]> {
+  const { data, error } = await supabase
+    .from('documents')
+    .select('*')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false });
+
+  if (error) return [];
+  return data as Document[];
+}

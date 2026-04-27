@@ -16,42 +16,50 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { auth } from '@/firebase/config'
-import { onAuthStateChanged, signOut, type User as FirebaseUser } from 'firebase/auth'
-import { getOrCreateProfile } from '@/lib/db'
+import { supabase } from '@/lib/supabase'
+import { getOrCreateProfile, type Profile } from '@/lib/db'
 import { useToast } from '@/hooks/use-toast'
 
 export function Navbar() {
-  const [user, setUser] = useState<FirebaseUser | null>(null)
+  const [profile, setProfile] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
   const { toast } = useToast()
   const router = useRouter()
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (u) => {
-      setUser(u)
-      if (u) {
-        try {
-          await getOrCreateProfile(u.uid, {
-            fullName: u.displayName || 'Utilisateur',
-            avatarUrl: u.photoURL || ''
-          })
-        } catch (err) {
-          console.error("Erreur profil:", err)
-        }
+    const fetchSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session?.user) {
+        const p = await getOrCreateProfile(session.user.id, {
+          full_name: session.user.user_metadata.full_name || 'Utilisateur',
+          avatar_url: session.user.user_metadata.avatar_url || ''
+        })
+        setProfile(p)
       }
       setLoading(false)
+    }
+
+    fetchSession()
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (session?.user) {
+        const p = await getOrCreateProfile(session.user.id, {
+          full_name: session.user.user_metadata.full_name || 'Utilisateur',
+          avatar_url: session.user.user_metadata.avatar_url || ''
+        })
+        setProfile(p)
+      } else {
+        setProfile(null)
+      }
     })
-    return () => unsubscribe()
+
+    return () => subscription.unsubscribe()
   }, [])
 
   const handleSignOut = async () => {
     try {
-      await signOut(auth)
-      toast({
-        title: "Déconnexion",
-        description: "À bientôt sur LibreShare !",
-      })
+      await supabase.auth.signOut()
+      toast({ title: "Déconnexion", description: "À bientôt sur LibreShare !" })
       router.push('/')
     } catch (error) {
       console.error("Erreur de déconnexion:", error)
@@ -79,22 +87,22 @@ export function Navbar() {
         <div className="flex items-center gap-2">
           {loading ? (
             <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
-          ) : user ? (
+          ) : profile ? (
             <>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="relative h-10 w-10 rounded-full">
                     <Avatar className="h-10 w-10 border shadow-sm">
-                      <AvatarImage src={user.photoURL || `https://picsum.photos/seed/${user.uid}/100/100`} alt={user.displayName || "User"} />
-                      <AvatarFallback>{user.displayName?.[0] || 'U'}</AvatarFallback>
+                      <AvatarImage src={profile.avatar_url} alt={profile.full_name} />
+                      <AvatarFallback>{profile.full_name?.[0] || 'U'}</AvatarFallback>
                     </Avatar>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-56" align="end" forceMount>
                   <DropdownMenuLabel className="font-normal">
                     <div className="flex flex-col space-y-1">
-                      <p className="text-sm font-medium leading-none">{user.displayName || "Utilisateur"}</p>
-                      <p className="text-xs leading-none text-muted-foreground">{user.email}</p>
+                      <p className="text-sm font-medium leading-none">{profile.full_name}</p>
+                      <p className="text-xs leading-none text-muted-foreground">@{profile.username}</p>
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />

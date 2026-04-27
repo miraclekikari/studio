@@ -1,12 +1,13 @@
+
 "use client"
 
 import React from 'react'
 import { CldUploadWidget } from 'next-cloudinary'
 import { Button } from '@/components/ui/button'
-import { Plus, Sparkles, Loader2 } from 'lucide-react'
+import { Plus, Loader2 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { saveDocument } from '@/lib/db'
-import { auth } from '@/firebase/config'
+import { supabase } from '@/lib/supabase'
 import { automatedDocumentTagging } from '@/ai/flows/automated-document-tagging'
 import { useRouter } from 'next/navigation'
 
@@ -26,21 +27,17 @@ export function UploadDocument() {
       }}
       onSuccess={async (results) => {
         const info = results.info as any
-        const user = auth.currentUser
+        const { data: { user } } = await supabase.auth.getUser()
         
         if (!user) {
-          toast({ 
-            variant: "destructive", 
-            title: "Non connecté", 
-            description: "Veuillez vous connecter pour partager un document." 
-          })
+          toast({ variant: "destructive", title: "Non connecté", description: "Veuillez vous connecter." })
           return
         }
 
         setIsProcessing(true)
 
         try {
-          // 1. Analyse IA pour les tags
+          // Analyse IA
           let aiTags: string[] = []
           try {
             const tagResult = await automatedDocumentTagging({ 
@@ -51,35 +48,24 @@ export function UploadDocument() {
             aiTags = ["Général", info.format || "fichier"]
           }
 
-          // 2. Sauvegarde Firestore
+          // Sauvegarde Supabase
           await saveDocument({
             title: info.original_filename || "Document sans titre",
             description: "Document partagé par la communauté LibreShare.",
-            fileUrl: info.secure_url,
-            thumbnailUrl: info.thumbnail_url || `https://placehold.co/400x600?text=${info.original_filename}`,
+            file_url: info.secure_url,
+            thumbnail_url: info.thumbnail_url || `https://placehold.co/400x600?text=${info.original_filename}`,
             category: "Général",
-            userId: user.uid,
-            userName: user.displayName || "Anonyme",
-            userAvatar: user.photoURL || "",
+            user_id: user.id,
             format: info.format || "pdf",
             tags: aiTags
           })
 
-          toast({ 
-            title: "Succès !", 
-            description: "Votre savoir a été partagé avec succès." 
-          })
-          
-          // Rafraîchir les données
+          toast({ title: "Succès !", description: "Votre savoir a été partagé." })
           router.refresh()
           window.location.reload()
         } catch (error) {
           console.error("Upload save error:", error)
-          toast({ 
-            variant: "destructive", 
-            title: "Erreur", 
-            description: "Impossible d'enregistrer le document." 
-          })
+          toast({ variant: "destructive", title: "Erreur", description: "Impossible d'enregistrer." })
         } finally {
           setIsProcessing(false)
         }

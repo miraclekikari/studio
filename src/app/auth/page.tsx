@@ -1,3 +1,4 @@
+
 "use client"
 
 import React, { useState } from 'react'
@@ -8,14 +9,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { auth } from '@/firebase/config'
-import { 
-  createUserWithEmailAndPassword, 
-  signInWithEmailAndPassword, 
-  signInWithPopup, 
-  GoogleAuthProvider,
-  updateProfile as firebaseUpdateProfile
-} from 'firebase/auth'
+import { supabase } from '@/lib/supabase'
 import { useToast } from '@/hooks/use-toast'
 import { Loader2, Library, Mail, Lock, User } from 'lucide-react'
 import { getOrCreateProfile } from '@/lib/db'
@@ -25,27 +19,21 @@ export default function AuthPage() {
   const router = useRouter()
   const { toast } = useToast()
 
-  // Login states
-  const [loginEmail, setLoginEmail] = useState('')
-  const [loginPassword, setLoginPassword] = useState('')
-
-  // Register states
-  const [regName, setRegName] = useState('')
-  const [regEmail, setRegEmail] = useState('')
-  const [regPassword, setRegPassword] = useState('')
+  // States
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [fullName, setFullName] = useState('')
 
   const handleGoogleSignIn = async () => {
     setLoading(true)
-    const provider = new GoogleAuthProvider()
     try {
-      const result = await signInWithPopup(auth, provider)
-      // Synchronisation immédiate avec Firestore
-      await getOrCreateProfile(result.user.uid, {
-        fullName: result.user.displayName || 'Utilisateur',
-        avatarUrl: result.user.photoURL || ''
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`
+        }
       })
-      toast({ title: "Bienvenue !", description: "Connexion réussie avec Google." })
-      router.push('/')
+      if (error) throw error
     } catch (error: any) {
       toast({ variant: "destructive", title: "Erreur", description: error.message })
     } finally {
@@ -57,11 +45,12 @@ export default function AuthPage() {
     e.preventDefault()
     setLoading(true)
     try {
-      await signInWithEmailAndPassword(auth, loginEmail, loginPassword)
+      const { error } = await supabase.auth.signInWithPassword({ email, password })
+      if (error) throw error
       toast({ title: "Content de vous revoir !", description: "Connexion réussie." })
       router.push('/')
     } catch (error: any) {
-      toast({ variant: "destructive", title: "Erreur", description: "Email ou mot de passe incorrect." })
+      toast({ variant: "destructive", title: "Erreur", description: error.message })
     } finally {
       setLoading(false)
     }
@@ -71,16 +60,23 @@ export default function AuthPage() {
     e.preventDefault()
     setLoading(true)
     try {
-      const result = await createUserWithEmailAndPassword(auth, regEmail, regPassword)
-      await firebaseUpdateProfile(result.user, { displayName: regName })
-      
-      // Création du profil Firestore pour la synchronisation
-      await getOrCreateProfile(result.user.uid, {
-        fullName: regName,
-        username: regName.toLowerCase().replace(/\s/g, '_')
+      const { data, error } = await supabase.auth.signUp({ 
+        email, 
+        password,
+        options: {
+          data: { full_name: fullName }
+        }
       })
+      if (error) throw error
       
-      toast({ title: "Compte créé !", description: "Bienvenue sur LibreShare." })
+      if (data.user) {
+        await getOrCreateProfile(data.user.id, {
+          full_name: fullName,
+          username: fullName.toLowerCase().replace(/\s/g, '_')
+        })
+      }
+      
+      toast({ title: "Compte créé !", description: "Veuillez vérifier votre email si nécessaire." })
       router.push('/')
     } catch (error: any) {
       toast({ variant: "destructive", title: "Erreur", description: error.message })
@@ -125,8 +121,8 @@ export default function AuthPage() {
                           type="email" 
                           placeholder="nom@exemple.com" 
                           className="pl-10 rounded-xl"
-                          value={loginEmail}
-                          onChange={(e) => setLoginEmail(e.target.value)}
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
                           required 
                         />
                       </div>
@@ -139,8 +135,8 @@ export default function AuthPage() {
                           id="password" 
                           type="password" 
                           className="pl-10 rounded-xl"
-                          value={loginPassword}
-                          onChange={(e) => setLoginPassword(e.target.value)}
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
                           required 
                         />
                       </div>
@@ -162,7 +158,7 @@ export default function AuthPage() {
                       onClick={handleGoogleSignIn}
                       disabled={loading}
                     >
-                      <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" className="w-5 h-5 mr-2" alt="Google" />
+                      <img src="https://www.gstatic.com/images/branding/product/1x/gsa_512dp.png" className="w-5 h-5 mr-2" alt="Google" />
                       Google
                     </Button>
                   </CardFooter>
@@ -186,8 +182,8 @@ export default function AuthPage() {
                           id="name" 
                           placeholder="Jean Dupont" 
                           className="pl-10 rounded-xl"
-                          value={regName}
-                          onChange={(e) => setRegName(e.target.value)}
+                          value={fullName}
+                          onChange={(e) => setFullName(e.target.value)}
                           required 
                         />
                       </div>
@@ -201,8 +197,8 @@ export default function AuthPage() {
                           type="email" 
                           placeholder="nom@exemple.com" 
                           className="pl-10 rounded-xl"
-                          value={regEmail}
-                          onChange={(e) => setRegEmail(e.target.value)}
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
                           required 
                         />
                       </div>
@@ -215,8 +211,8 @@ export default function AuthPage() {
                           id="reg-password" 
                           type="password" 
                           className="pl-10 rounded-xl"
-                          value={regPassword}
-                          onChange={(e) => setRegPassword(e.target.value)}
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
                           required 
                         />
                       </div>
