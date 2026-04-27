@@ -1,0 +1,22 @@
+
+{
+  "name": "LibreShare",
+  "short_name": "LibreShare",
+  "description": "Your social document sharing platform.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#EDF4F9",
+  "theme_color": "#63A5DE",
+  "icons": [
+    {
+      "src": "https://picsum.photos/seed/libreshare/192/192",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "https://picsum.photos/seed/libreshare/512/512",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

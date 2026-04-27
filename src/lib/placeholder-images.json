@@ -1,3 +1,34 @@
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "doc-1",
+      "description": "Tech Whitepaper thumbnail",
+      "imageUrl": "https://picsum.photos/seed/doc1/400/600",
+      "imageHint": "technical document"
+    },
+    {
+      "id": "doc-2",
+      "description": "Recipe Book thumbnail",
+      "imageUrl": "https://picsum.photos/seed/doc2/400/600",
+      "imageHint": "cooking book"
+    },
+    {
+      "id": "doc-3",
+      "description": "Travel Guide thumbnail",
+      "imageUrl": "https://picsum.photos/seed/doc3/400/600",
+      "imageHint": "travel guide"
+    },
+    {
+      "id": "doc-4",
+      "description": "Business Strategy thumbnail",
+      "imageUrl": "https://picsum.photos/seed/doc4/400/600",
+      "imageHint": "business report"
+    },
+    {
+      "id": "avatar-1",
+      "description": "User avatar",
+      "imageUrl": "https://picsum.photos/seed/user1/100/100",
+      "imageHint": "portrait"
+    }
+  ]
 }
