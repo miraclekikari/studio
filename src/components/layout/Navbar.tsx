@@ -1,7 +1,9 @@
+
 "use client"
 
 import React, { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { Search, User, Library, Settings, LogOut, Loader2 } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -15,7 +17,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { auth } from '@/firebase/config'
-import { onAuthStateChanged, signOut, type User as FirebaseUser, GoogleAuthProvider, signInWithPopup } from 'firebase/auth'
+import { onAuthStateChanged, signOut, type User as FirebaseUser } from 'firebase/auth'
 import { getOrCreateProfile } from '@/lib/db'
 import { useToast } from '@/hooks/use-toast'
 
@@ -23,12 +25,12 @@ export function Navbar() {
   const [user, setUser] = useState<FirebaseUser | null>(null)
   const [loading, setLoading] = useState(true)
   const { toast } = useToast()
+  const router = useRouter()
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (u) => {
       setUser(u)
       if (u) {
-        // S'assurer que le profil existe en base
         try {
           await getOrCreateProfile(u.uid, {
             fullName: u.displayName || 'Utilisateur',
@@ -43,24 +45,6 @@ export function Navbar() {
     return () => unsubscribe()
   }, [])
 
-  const handleSignIn = async () => {
-    const provider = new GoogleAuthProvider()
-    try {
-      await signInWithPopup(auth, provider)
-      toast({
-        title: "Bienvenue ! 👋",
-        description: "Vous êtes maintenant connecté.",
-      })
-    } catch (error: any) {
-      console.error("Erreur de connexion:", error)
-      toast({
-        variant: "destructive",
-        title: "Erreur de connexion",
-        description: error.message || "Impossible de se connecter.",
-      })
-    }
-  }
-
   const handleSignOut = async () => {
     try {
       await signOut(auth)
@@ -68,6 +52,7 @@ export function Navbar() {
         title: "Déconnexion",
         description: "À bientôt sur LibreShare !",
       })
+      router.push('/')
     } catch (error) {
       console.error("Erreur de déconnexion:", error)
     }
@@ -138,8 +123,8 @@ export function Navbar() {
               </DropdownMenu>
             </>
           ) : (
-            <Button variant="default" className="rounded-full px-6" onClick={handleSignIn}>
-              Connexion
+            <Button variant="default" className="rounded-full px-6" asChild>
+              <Link href="/auth">Connexion</Link>
             </Button>
           )}
         </div>
