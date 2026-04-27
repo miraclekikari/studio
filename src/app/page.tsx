@@ -1,4 +1,3 @@
-
 "use client"
 
 import React, { useEffect, useState } from 'react'
@@ -100,7 +99,7 @@ export default function Home() {
                   author={doc.profiles?.username || doc.profiles?.full_name || 'Anonyme'}
                   authorAvatar={doc.profiles?.avatar_url}
                   thumbnail={doc.thumbnail_url}
-                  tags={[doc.category]}
+                  file_url={doc.file_url}
                   views={doc.views}
                   likes={doc.likes}
                   type={doc.format}

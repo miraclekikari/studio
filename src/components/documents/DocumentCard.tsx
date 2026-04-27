@@ -1,10 +1,9 @@
-
 "use client"
 
 import React, { useState, useEffect } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { Eye, Heart, Share2 } from 'lucide-react'
+import { Eye, Heart, Share2, Download } from 'lucide-react'
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -19,12 +18,13 @@ interface DocumentCardProps {
   author: string;
   authorAvatar?: string;
   thumbnail: string;
+  file_url?: string;
   views: number;
   likes: number;
   type: string;
 }
 
-export function DocumentCard({ id, title, author, authorAvatar, thumbnail, views, likes, type }: DocumentCardProps) {
+export function DocumentCard({ id, title, author, authorAvatar, thumbnail, file_url, views, likes, type }: DocumentCardProps) {
   const { toast } = useToast()
   const [currentLikes, setCurrentLikes] = useState(likes)
   const [userId, setUserId] = useState<string | null>(null)
@@ -65,6 +65,15 @@ export function DocumentCard({ id, title, author, authorAvatar, thumbnail, views
     toast({ title: "Lien copié !", description: "Le savoir est prêt à être partagé." })
   }
 
+  const handleDownload = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (!file_url) {
+        toast({ title: "Erreur", description: "Fichier source introuvable.", variant: "destructive" })
+        return
+    }
+    toast({ title: "Téléchargement lancé", description: "Votre ressource arrive." })
+  }
+
   return (
     <Card className="group flex flex-col h-full border-none bg-white shadow-[0_4px_20px_rgba(0,0,0,0.05)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.1)] transition-all duration-500 rounded-[2rem] overflow-hidden">
       <CardHeader className="p-0 relative aspect-[4/5] overflow-hidden">
@@ -82,6 +91,13 @@ export function DocumentCard({ id, title, author, authorAvatar, thumbnail, views
               <Eye className="w-6 h-6" />
             </Link>
           </Button>
+          {file_url && (
+            <Button size="icon" variant="secondary" className="rounded-full w-12 h-12 shadow-2xl hover:scale-110 transition-transform" onClick={handleDownload} asChild>
+              <a href={file_url} target="_blank" rel="noopener noreferrer" download>
+                <Download className="w-6 h-6" />
+              </a>
+            </Button>
+          )}
         </div>
 
         <div className="absolute top-4 left-4">
@@ -106,9 +122,18 @@ export function DocumentCard({ id, title, author, authorAvatar, thumbnail, views
             </Avatar>
             <span className="text-sm text-slate-500 font-semibold">{author}</span>
           </div>
-          <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-primary rounded-full" onClick={handleShare}>
-            <Share2 className="w-4 h-4" />
-          </Button>
+          <div className="flex gap-1">
+            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-primary rounded-full" onClick={handleShare}>
+              <Share2 className="w-4 h-4" />
+            </Button>
+            {file_url && (
+                <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-primary rounded-full" asChild>
+                    <a href={file_url} target="_blank" rel="noopener noreferrer" download>
+                        <Download className="w-4 h-4" />
+                    </a>
+                </Button>
+            )}
+          </div>
         </div>
       </CardContent>
 

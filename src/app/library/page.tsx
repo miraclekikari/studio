@@ -1,4 +1,3 @@
-
 "use client"
 
 import React, { useEffect, useState } from 'react'
@@ -110,7 +109,7 @@ export default function LibraryPage() {
                     author={userId === doc.user_id ? "Moi" : (doc.profiles?.username || "Auteur")}
                     authorAvatar={doc.profiles?.avatar_url}
                     thumbnail={doc.thumbnail_url}
-                    tags={doc.tags || []}
+                    file_url={doc.file_url}
                     views={doc.views}
                     likes={doc.likes}
                     type={doc.format}

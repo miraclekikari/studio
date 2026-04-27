@@ -1,4 +1,3 @@
-
 "use client"
 
 import React, { useEffect, useState, Suspense } from 'react'
@@ -152,7 +151,7 @@ function ExploreContent() {
                 author={doc.profiles?.username || doc.profiles?.full_name || 'Anonyme'}
                 authorAvatar={doc.profiles?.avatar_url}
                 thumbnail={doc.thumbnail_url}
-                tags={doc.tags || [doc.format.toUpperCase()]}
+                file_url={doc.file_url}
                 views={doc.views}
                 likes={doc.likes}
                 type={doc.format}
