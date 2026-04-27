@@ -9,10 +9,8 @@ import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { 
   Download, 
-  Share2, 
   Heart, 
   Eye, 
-  Sparkles, 
   ChevronLeft, 
   FileText,
   Loader2,
@@ -46,6 +44,7 @@ export default function DocumentDetailPage() {
         const data = await getDocumentById(id)
         if (data) {
           setDocData(data)
+          // Utilisation obligatoire du RPC pour les vues
           incrementDocumentViews(id).catch(console.error)
         }
       } catch (err) {
@@ -64,9 +63,10 @@ export default function DocumentDetailPage() {
     }
 
     try {
+      // Utilisation obligatoire du RPC pour les likes
       await toggleLikeDocument(docData.id, userId)
-      toast({ title: "Document aimé !" })
-      // Rafraîchir localement ou via service
+      toast({ title: "Merci pour votre vote !" })
+      setDocData(prev => prev ? { ...prev, likes: prev.likes + 1 } : null)
     } catch (err) {
       console.error(err)
     }
@@ -81,7 +81,7 @@ export default function DocumentDetailPage() {
       setSummary(result.summary)
     } catch (err) {
       console.error(err)
-      toast({ title: "Erreur IA", description: "Impossible de générer le résumé.", variant: "destructive" })
+      toast({ title: "Analyse interrompue", description: "L'assistant n'a pas pu traiter ce document.", variant: "destructive" })
     } finally {
       setSummarizing(false)
     }
@@ -93,7 +93,7 @@ export default function DocumentDetailPage() {
         <Navbar />
         <main className="flex-1 flex flex-col items-center justify-center">
           <Loader2 className="w-12 h-12 text-primary animate-spin mb-4" />
-          <p className="text-slate-500 font-medium">Récupération des données Supabase...</p>
+          <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">Accès au savoir...</p>
         </main>
       </div>
     )
@@ -105,7 +105,7 @@ export default function DocumentDetailPage() {
         <Navbar />
         <main className="flex-1 container mx-auto px-4 py-20 text-center">
           <h1 className="text-2xl font-bold mb-4">Document non trouvé</h1>
-          <Button onClick={() => router.push('/')} className="rounded-full px-8">Retour</Button>
+          <Button onClick={() => router.push('/')} className="rounded-full px-8">Retour à l'accueil</Button>
         </main>
       </div>
     )
@@ -118,29 +118,24 @@ export default function DocumentDetailPage() {
       <main className="flex-1 container mx-auto px-4 py-8 max-w-7xl">
         <Link href="/" className="inline-flex items-center text-sm font-bold text-slate-500 hover:text-primary mb-8 group transition-colors">
           <ChevronLeft className="w-4 h-4 mr-1 transition-transform group-hover:-translate-x-1" />
-          Retour à la bibliothèque
+          Retour au catalogue
         </Link>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
           {/* Main Content */}
           <div className="lg:col-span-8 space-y-8">
             <div className="bg-white rounded-[2.5rem] p-4 shadow-xl border overflow-hidden">
-              {docData.thumbnail_url ? (
-                <div className="aspect-[3/4] rounded-[2rem] overflow-hidden">
+              <div className="aspect-[3/4] rounded-[2rem] overflow-hidden bg-slate-100">
+                {docData.format === 'pdf' || docData.file_url.includes('.pdf') ? (
                   <iframe 
                     src={docData.file_url} 
                     className="w-full h-full border-none"
                     title={docData.title}
                   />
-                </div>
-              ) : (
-                <div className="aspect-[3/4] bg-slate-50 rounded-[2rem] flex items-center justify-center border-2 border-dashed border-slate-100">
-                  <div className="text-center p-12">
-                    <FileText className="w-20 h-20 text-slate-200 mx-auto mb-4" />
-                    <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">Prévisualisation indisponible</p>
-                  </div>
-                </div>
-              )}
+                ) : (
+                  <img src={docData.file_url} alt={docData.title} className="w-full h-full object-contain" />
+                )}
+              </div>
             </div>
 
             <div className="bg-white rounded-[2.5rem] p-10 shadow-sm border">
@@ -154,20 +149,20 @@ export default function DocumentDetailPage() {
                   </Avatar>
                   <div>
                     <p className="font-bold text-slate-900">{docData.profiles?.full_name}</p>
-                    <p className="text-xs text-slate-400 font-medium">Contributeur Supabase</p>
+                    <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">@{docData.profiles?.username}</p>
                   </div>
                 </div>
                 
                 <div className="flex items-center gap-3">
                   <Button 
                     variant="outline" 
-                    size="sm" 
+                    size="lg" 
                     onClick={handleLike}
-                    className="rounded-full gap-2 border-slate-200 hover:bg-slate-50"
+                    className="rounded-full gap-2 border-slate-200 hover:bg-slate-50 font-bold"
                   >
                     <Heart className="w-4 h-4" /> {docData.likes}
                   </Button>
-                  <Button size="lg" className="rounded-full gap-2 shadow-lg shadow-primary/20 px-8" asChild>
+                  <Button size="lg" className="rounded-full gap-2 shadow-lg shadow-primary/20 px-8 font-bold" asChild>
                     <a href={docData.file_url} target="_blank" rel="noopener noreferrer">
                       <Download className="w-4 h-4" /> Télécharger
                     </a>
@@ -177,20 +172,24 @@ export default function DocumentDetailPage() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
                 <div className="space-y-4">
-                  <h2 className="text-xl font-headline font-bold text-slate-800">Détails</h2>
+                  <h2 className="text-xl font-headline font-bold text-slate-800">Métadonnées</h2>
                   <div className="space-y-2">
-                    <div className="flex items-center gap-3 text-sm text-slate-500">
-                      <Calendar className="w-4 h-4" />
-                      Partagé via Cloudinary
+                    <div className="flex items-center gap-3 text-sm text-slate-500 font-medium">
+                      <Calendar className="w-4 h-4 text-primary/40" />
+                      Publié récemment
                     </div>
-                    <div className="flex items-center gap-3 text-sm text-slate-500">
-                      <FileText className="w-4 h-4" />
+                    <div className="flex items-center gap-3 text-sm text-slate-500 font-medium">
+                      <FileText className="w-4 h-4 text-primary/40" />
                       Format {docData.format.toUpperCase()}
+                    </div>
+                    <div className="flex items-center gap-3 text-sm text-slate-500 font-medium">
+                      <Eye className="w-4 h-4 text-primary/40" />
+                      {docData.views} consultations
                     </div>
                   </div>
                 </div>
                 <div className="space-y-4">
-                  <h2 className="text-xl font-headline font-bold text-slate-800">Tags IA</h2>
+                  <h2 className="text-xl font-headline font-bold text-slate-800">Thématiques</h2>
                   <div className="flex flex-wrap gap-2">
                     {docData.tags?.map(tag => (
                       <Badge key={tag} variant="secondary" className="px-3 py-1 bg-primary/5 text-primary border-none rounded-full font-bold">
@@ -204,42 +203,44 @@ export default function DocumentDetailPage() {
               <Separator className="my-10" />
 
               <h2 className="text-xl font-headline font-bold mb-4 text-slate-800">Description</h2>
-              <p className="text-slate-600 leading-relaxed text-lg">
+              <p className="text-slate-600 leading-relaxed text-lg font-medium">
                 {docData.description}
               </p>
             </div>
           </div>
 
-          {/* Assistant IA Sidebar */}
+          {/* Assistant Sidebar */}
           <div className="lg:col-span-4 space-y-8">
             <div className="bg-primary text-primary-foreground rounded-[2.5rem] p-8 shadow-2xl relative overflow-hidden group sticky top-24">
+              <div className="absolute -top-10 -right-10 w-40 h-40 bg-white/10 rounded-full blur-3xl" />
               <h3 className="text-2xl font-headline font-bold flex items-center gap-3 mb-6 relative z-10">
-                Assistant IA
+                Assistant Studio
               </h3>
               
               <div className="relative z-10">
                 {!summary && !summarizing ? (
                   <>
-                    <p className="text-base opacity-80 mb-8 leading-relaxed">
-                      Laissez notre IA analyser ce document Supabase pour vous en générer un résumé.
+                    <p className="text-base opacity-80 mb-8 leading-relaxed font-medium">
+                      Interrogez notre intelligence pour obtenir une synthèse immédiate de ce document.
                     </p>
                     <Button 
                       onClick={handleSummarize}
                       variant="secondary" 
-                      className="w-full bg-white text-primary hover:bg-white/90 border-none font-bold rounded-full py-6"
+                      className="w-full bg-white text-primary hover:bg-white/90 border-none font-bold rounded-full py-6 shadow-xl"
                     >
-                      Résumer
+                      Synthétiser
                     </Button>
                   </>
                 ) : summarizing ? (
                   <div className="space-y-4 py-4">
                     <Skeleton className="h-5 w-full bg-white/10 rounded-full" />
                     <Skeleton className="h-5 w-[90%] bg-white/10 rounded-full" />
-                    <p className="text-xs text-center animate-pulse opacity-60 font-bold mt-6">Analyse...</p>
+                    <Skeleton className="h-5 w-[95%] bg-white/10 rounded-full" />
+                    <p className="text-xs text-center animate-pulse opacity-60 font-bold mt-6 uppercase tracking-widest">Analyse en cours...</p>
                   </div>
                 ) : (
                   <div className="bg-white/5 backdrop-blur-sm p-6 rounded-[1.5rem] border border-white/10 shadow-inner">
-                    <p className="text-base leading-relaxed italic opacity-90">
+                    <p className="text-base leading-relaxed italic opacity-90 font-medium">
                       "{summary}"
                     </p>
                   </div>

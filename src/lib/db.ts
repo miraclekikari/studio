@@ -83,22 +83,38 @@ export async function getOrCreateProfile(uid: string, defaultData: Partial<Profi
 }
 
 /**
- * Sauvegarde un document
+ * Sauvegarde un document avec les noms de colonnes exacts
  */
 export async function saveDocument(doc: Omit<Document, 'id' | 'created_at' | 'likes' | 'views'>) {
   if (!isSupabaseConfigured) throw new Error("Base de données non configurée");
-  const { data, error } = await supabase.from('documents').insert([{ ...doc, likes: 0, views: 0 }]).select().single();
+  const { data, error } = await supabase.from('documents').insert([{ 
+    title: doc.title,
+    description: doc.description,
+    file_url: doc.file_url,
+    thumbnail_url: doc.thumbnail_url,
+    category: doc.category,
+    user_id: doc.user_id,
+    format: doc.format,
+    tags: doc.tags,
+    likes: 0, 
+    views: 0 
+  }]).select().single();
   if (error) throw error;
   return data;
 }
 
 /**
- * Récupère les documents avec filtres
+ * Récupère les documents avec filtres et jointure profiles
  */
 export async function getLatestDocuments(limitCount: number = 20, category?: string): Promise<Document[]> {
   if (!isSupabaseConfigured) return [];
   try {
-    let query = supabase.from('documents').select('*, profiles!user_id(*)').order('created_at', { ascending: false }).limit(limitCount);
+    let query = supabase
+      .from('documents')
+      .select('*, profiles!user_id(*)')
+      .order('created_at', { ascending: false })
+      .limit(limitCount);
+      
     if (category && category !== 'Tous' && category !== 'Tendances') {
       query = query.eq('category', category);
     }
@@ -112,7 +128,7 @@ export async function getLatestDocuments(limitCount: number = 20, category?: str
 }
 
 /**
- * Statistiques utilisateur
+ * Statistiques utilisateur basées sur user_id
  */
 export async function getUserStats(userId: string) {
   if (!isSupabaseConfigured) return { likes: 0, posts: 0 };
@@ -131,11 +147,17 @@ export async function getDocumentById(id: string): Promise<Document | null> {
   return error ? null : (data as any);
 }
 
+/**
+ * Incrémentation via RPC
+ */
 export async function incrementDocumentViews(id: string) {
   if (!isSupabaseConfigured) return;
   await supabase.rpc('increment_views', { doc_id: id });
 }
 
+/**
+ * Like via RPC
+ */
 export async function toggleLikeDocument(docId: string, userId: string) {
   if (!isSupabaseConfigured) return;
   await supabase.rpc('increment_likes', { doc_id: docId });

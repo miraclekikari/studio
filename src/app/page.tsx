@@ -7,7 +7,7 @@ import { DocumentCard } from '@/components/documents/DocumentCard'
 import { RecommendationList } from '@/components/documents/RecommendationList'
 import { UploadDocument } from '@/components/documents/UploadDocument'
 import { Button } from '@/components/ui/button'
-import { Filter, Library, Loader2, Sparkles } from 'lucide-react'
+import { Filter, Library, Loader2 } from 'lucide-react'
 import { getLatestDocuments, type Document } from '@/lib/db'
 
 export default function Home() {
@@ -59,7 +59,7 @@ export default function Home() {
                 <div className="relative aspect-[4/3] rounded-[2.5rem] overflow-hidden shadow-2xl border-[12px] border-white">
                   <img 
                     src="https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=2070&auto=format&fit=crop" 
-                    alt="LibreShare Experience" 
+                    alt="Studio Experience" 
                     className="object-cover w-full h-full transform transition duration-700 group-hover:scale-105"
                   />
                 </div>
@@ -79,9 +79,8 @@ export default function Home() {
             </div>
             
             <div className="flex items-center gap-3">
-              <Button variant="outline" className="rounded-full gap-2 border-slate-200 bg-white px-6">
-                <Filter className="w-4 h-4" />
-                Filtrer
+              <Button variant="outline" className="rounded-full gap-2 border-slate-200 bg-white px-6 font-bold" asChild>
+                <a href="/explore"><Filter className="w-4 h-4" /> Filtrer</a>
               </Button>
             </div>
           </div>
@@ -98,7 +97,7 @@ export default function Home() {
                   key={doc.id} 
                   id={doc.id}
                   title={doc.title}
-                  author={doc.profiles?.full_name || 'Anonyme'}
+                  author={doc.profiles?.username || doc.profiles?.full_name || 'Anonyme'}
                   authorAvatar={doc.profiles?.avatar_url}
                   thumbnail={doc.thumbnail_url}
                   tags={[doc.category]}
@@ -112,7 +111,7 @@ export default function Home() {
             <div className="text-center py-24 bg-white rounded-[3rem] border-2 border-dashed border-slate-100">
               <Library className="w-20 h-20 text-slate-100 mx-auto mb-6" />
               <h3 className="text-2xl font-bold text-slate-800">Aucun contenu trouvé</h3>
-              <p className="text-slate-500 mt-2 mb-10">Soyez le premier à partager une ressource.</p>
+              <p className="text-slate-500 mt-2 mb-10 font-medium">Soyez le premier à partager une ressource.</p>
               <UploadDocument />
             </div>
           )}

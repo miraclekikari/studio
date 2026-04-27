@@ -4,7 +4,7 @@
 import React, { useState, useEffect } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { FileText, Download, Eye, Heart, Share2 } from 'lucide-react'
+import { Eye, Heart, Share2 } from 'lucide-react'
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -12,7 +12,6 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { supabase } from '@/lib/supabase'
 import { toggleLikeDocument } from '@/lib/db'
 import { useToast } from '@/hooks/use-toast'
-import { cn } from '@/lib/utils'
 
 interface DocumentCardProps {
   id: string;
@@ -53,7 +52,7 @@ export function DocumentCard({ id, title, author, authorAvatar, thumbnail, tags,
     try {
       await toggleLikeDocument(id, userId)
       setCurrentLikes(prev => prev + 1)
-      toast({ title: "Aimé !" })
+      toast({ title: "Merci pour votre intérêt !" })
     } catch (error) {
       console.error(error)
     }
@@ -112,7 +111,7 @@ export function DocumentCard({ id, title, author, authorAvatar, thumbnail, tags,
             onClick={handleLike}
             className="flex items-center gap-1.5 transition-colors hover:text-red-500"
           >
-            <Heart className="w-4 h-4" />
+            <Heart className={currentLikes > likes ? "w-4 h-4 fill-red-500 text-red-500" : "w-4 h-4"} />
             <span className="text-xs font-bold">{currentLikes}</span>
           </button>
           <div className="flex items-center gap-1.5">
@@ -121,7 +120,7 @@ export function DocumentCard({ id, title, author, authorAvatar, thumbnail, tags,
           </div>
         </div>
         <div className="flex gap-1.5">
-          {tags.slice(0, 2).map(tag => (
+          {tags.slice(0, 1).map(tag => (
             <span key={tag} className="text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-md uppercase tracking-wider">
               {tag}
             </span>

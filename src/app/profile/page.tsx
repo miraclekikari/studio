@@ -144,7 +144,7 @@ export default function ProfilePage() {
             <div className="flex items-center gap-4 pb-6 self-center md:self-end">
               <Button onClick={handleEdit} className="rounded-full px-12 h-16 font-bold text-xl shadow-2xl shadow-primary/20">Édition</Button>
               <Button onClick={handleShare} variant="outline" className="rounded-full bg-white shadow-xl px-10 h-16 border-none hover:bg-slate-50">
-                <Share2 className="w-6 h-6" />
+                <Share2 className="w-6 h-6 text-slate-400" />
               </Button>
             </div>
           </div>
